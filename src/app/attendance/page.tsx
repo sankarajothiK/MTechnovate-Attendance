@@ -2,13 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
-import MTechnoLogo from '@/components/MTechnoLogo';
 import {
   CheckCircle2,
   AlertCircle,
   Clock,
   Calendar,
-  Building,
   UserCheck,
   ShieldAlert,
   ArrowRight,
@@ -16,11 +14,13 @@ import {
   MapPin,
   Sparkles,
   RefreshCw,
-  Search,
+  Lock,
+  ChevronRight,
 } from 'lucide-react';
 import { verifyAndMarkAttendance, getOfficeSettings } from '@/lib/db';
 import { Employee, AttendanceRecord, OfficeSettings } from '@/types';
 import { formatTime12h, formatDisplayDate } from '@/lib/dateUtils';
+import Link from 'next/link';
 
 export default function AttendancePage() {
   const [employeeId, setEmployeeId] = useState('');
@@ -56,13 +56,13 @@ export default function AttendancePage() {
   const triggerConfetti = () => {
     try {
       confetti({
-        particleCount: 80,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: ['#2563eb', '#06b6d4', '#10b981', '#6366f1'],
+        particleCount: 90,
+        spread: 80,
+        origin: { y: 0.55 },
+        colors: ['#b76e79', '#c5838d', '#e8c3b9', '#10b981', '#3b82f6'],
       });
     } catch {
-      // Confetti fallback
+      // Fallback
     }
   };
 
@@ -80,7 +80,6 @@ export default function AttendancePage() {
     setVerifiedEmployee(null);
     setAttendanceRecord(null);
 
-    // Geolocation if geofence is enabled
     let coords: { latitude: number; longitude: number } | undefined = undefined;
     if (settings?.geofenceEnabled && navigator.geolocation) {
       try {
@@ -149,48 +148,70 @@ export default function AttendancePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-950 to-blue-950 text-slate-100 flex flex-col justify-between py-6 px-4 sm:px-6">
-      {/* Header */}
-      <header className="max-w-md mx-auto w-full flex items-center justify-between py-2 border-b border-slate-800/80">
-        <MTechnoLogo size="sm" variant="light" />
+    <div className="min-h-screen bg-gradient-to-b from-[#fdfbfb] via-[#fff8f8] to-[#fbf2f2] text-slate-900 flex flex-col justify-between py-6 px-4 sm:px-6 relative overflow-hidden">
+      {/* Top Rose Gold Hairline */}
+      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#e8c3b9] via-[#c5838d] to-[#b76e79]" />
+
+      {/* Ambient Soft Glow Circles */}
+      <div className="absolute -top-32 -right-32 w-80 h-80 bg-rose-200/30 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-32 -left-32 w-80 h-80 bg-amber-100/40 rounded-full blur-3xl pointer-events-none" />
+
+      {/* Header Bar */}
+      <header className="max-w-md mx-auto w-full flex items-center justify-between py-3 border-b border-[#ebdcdc] relative z-10">
+        <Link href="/admin" className="flex items-center gap-2.5 select-none group">
+          <div className="w-9 h-9 rounded-xl p-0.5 bg-white ring-2 ring-[#ebdcdc] group-hover:ring-[#b76e79] shadow-xs overflow-hidden flex items-center justify-center transition-all">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt="M Technovate" className="w-full h-full object-contain" />
+          </div>
+          <div>
+            <p className="text-xs font-black tracking-tight text-slate-900">
+              M TECHNOVATE <span className="text-[#b76e79]">SOLUTIONS</span>
+            </p>
+            <p className="text-[9px] font-semibold text-[#a0636d] uppercase tracking-wider">
+              Innovate at every step
+            </p>
+          </div>
+        </Link>
+
+        {/* Live Clock Pill */}
         <div className="text-right">
-          <div className="flex items-center justify-end gap-1.5 text-xs font-mono font-bold text-cyan-400">
-            <Clock className="w-3.5 h-3.5" />
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-[#ebdcdc] text-xs font-mono font-bold text-[#8e4a55] shadow-2xs">
+            <Clock className="w-3 h-3 text-[#b76e79]" />
             <span>{currentTime || '09:00 AM'}</span>
           </div>
-          <div className="flex items-center justify-end gap-1 text-[11px] text-slate-400">
-            <Calendar className="w-3 h-3" />
-            <span>{currentDate || '07 September 2026'}</span>
-          </div>
+          <p className="text-[10px] font-medium text-slate-400 mt-0.5 pr-1">
+            {currentDate || '07 September 2026'}
+          </p>
         </div>
       </header>
 
       {/* Main Terminal Card */}
-      <main className="max-w-md mx-auto w-full my-auto py-6">
-        <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl relative overflow-hidden">
-          <div className="absolute -top-24 -right-24 w-48 h-48 bg-blue-600/20 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-cyan-600/15 rounded-full blur-3xl pointer-events-none" />
+      <main className="max-w-md mx-auto w-full my-auto py-6 relative z-10">
+        <div className="bg-white/95 backdrop-blur-xl border border-[#ebdcdc] rounded-3xl p-6 sm:p-8 shadow-[0_20px_50px_-10px_rgba(183,110,121,0.12)] relative overflow-hidden transition-all">
+          {/* Subtle Top Inner Rose Shimmer */}
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#c5838d]/40 to-transparent" />
 
           {/* STATE 1: IDLE / FORM */}
           {statusType === 'IDLE' && (
             <div className="space-y-6 text-center">
+              {/* Floating Logo Badge */}
               <div className="flex justify-center">
-                <div className="w-20 h-20 rounded-2xl overflow-hidden p-1 bg-white border border-slate-700 shadow-md">
+                <div className="w-20 h-20 rounded-2xl p-1.5 bg-white shadow-md shadow-[#b76e79]/15 ring-2 ring-[#ebdcdc] flex items-center justify-center">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src="/logo.png" alt="M Technovate Solutions" className="w-full h-full object-contain" />
                 </div>
               </div>
 
               <div className="space-y-1">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-blue-500/10 text-cyan-400 border border-blue-500/20">
-                  <Sparkles className="w-3 h-3" /> Office Entrance Terminal
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold bg-[#fff5f5] text-[#8e4a55] border border-[#ecd2cf]">
+                  <Sparkles className="w-3 h-3 text-[#b76e79]" /> Office Attendance Terminal
                 </span>
-                <h1 className="text-2xl font-black text-white">
-                  M Technovate Solutions
+                <h1 className="text-2xl font-black tracking-tight text-slate-900">
+                  Mark Your Attendance
                 </h1>
-                <h2 className="text-sm font-semibold text-slate-400">
-                  Employee Attendance
-                </h2>
+                <p className="text-xs text-slate-500 max-w-xs mx-auto">
+                  Enter your assigned Employee ID to verify registered face photo and record check-in / check-out.
+                </p>
               </div>
 
               <form
@@ -203,7 +224,7 @@ export default function AttendancePage() {
                 <div>
                   <label
                     htmlFor="empIdInput"
-                    className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2"
+                    className="block text-[11px] font-bold uppercase tracking-wider text-[#8e4a55] mb-2"
                   >
                     Enter your Employee ID
                   </label>
@@ -217,9 +238,9 @@ export default function AttendancePage() {
                       placeholder="e.g. MT001"
                       value={employeeId}
                       onChange={(e) => setEmployeeId(e.target.value.toUpperCase())}
-                      className="w-full px-4 py-3.5 bg-slate-800/90 border-2 border-slate-700 hover:border-blue-500 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 rounded-2xl font-mono text-lg font-black text-white tracking-widest placeholder:text-slate-500 placeholder:font-sans placeholder:font-normal placeholder:text-sm focus:outline-none transition-all"
+                      className="w-full px-4 py-3.5 bg-[#fdfbfb] border-2 border-[#ebdcdc] hover:border-[#c5838d] focus:border-[#b76e79] focus:ring-4 focus:ring-[#b76e79]/15 rounded-2xl font-mono text-lg font-black text-slate-900 tracking-widest placeholder:text-slate-400 placeholder:font-sans placeholder:font-normal placeholder:text-sm focus:outline-none transition-all shadow-inner"
                     />
-                    <span className="absolute right-3.5 top-3.5 px-2 py-0.5 rounded-md bg-slate-700 text-slate-300 text-[11px] font-mono font-bold">
+                    <span className="absolute right-3.5 top-3.5 px-2.5 py-1 rounded-lg bg-[#fff5f5] text-[#8e4a55] border border-[#ecd2cf] text-xs font-mono font-bold">
                       MT
                     </span>
                   </div>
@@ -228,7 +249,7 @@ export default function AttendancePage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-4 px-6 bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 active:scale-98 disabled:opacity-50 text-white rounded-2xl font-black text-sm tracking-wider uppercase shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2 transition-all cursor-pointer"
+                  className="w-full py-4 px-6 bg-gradient-to-r from-[#b76e79] via-[#c5838d] to-[#9e5762] hover:from-[#a8606b] hover:to-[#8c4651] active:scale-98 disabled:opacity-50 text-white rounded-2xl font-black text-xs uppercase tracking-wider shadow-lg shadow-[#b76e79]/25 flex items-center justify-center gap-2 transition-all cursor-pointer border border-[#e5b3b9]"
                 >
                   {loading ? (
                     <>
@@ -237,60 +258,18 @@ export default function AttendancePage() {
                     </>
                   ) : (
                     <>
-                      <UserCheck className="w-5 h-5" />
+                      <UserCheck className="w-4 h-4" />
                       <span>Verify & Mark Attendance</span>
                     </>
                   )}
                 </button>
               </form>
 
-              {/* Quick Demo Test Buttons */}
-              <div className="pt-4 border-t border-slate-800/80 text-left">
-                <p className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider mb-2">
-                  Test Profiles (From Database):
+              {/* Quick Helper */}
+              <div className="pt-3 border-t border-[#f2e6e6] text-center">
+                <p className="text-[11px] text-slate-400">
+                  First scan of the day records <strong>Check-In</strong> • Second scan records <strong>Check-Out</strong>
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEmployeeId('MT001');
-                      handleVerifyAndMark('MT001');
-                    }}
-                    className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-xs font-mono font-semibold text-blue-300 transition-colors"
-                  >
-                    MT001 (Naveen Kumar)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEmployeeId('MT002');
-                      handleVerifyAndMark('MT002');
-                    }}
-                    className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-xs font-mono font-semibold text-cyan-300 transition-colors"
-                  >
-                    MT002 (Rahul Kumar)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEmployeeId('MT005');
-                      handleVerifyAndMark('MT005');
-                    }}
-                    className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-xs font-mono font-semibold text-amber-300 transition-colors"
-                  >
-                    MT005 (Inactive Test)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEmployeeId('MT999');
-                      handleVerifyAndMark('MT999');
-                    }}
-                    className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-xs font-mono font-semibold text-rose-300 transition-colors"
-                  >
-                    MT999 (Not Found)
-                  </button>
-                </div>
               </div>
             </div>
           )}
@@ -298,13 +277,13 @@ export default function AttendancePage() {
           {/* STATE 2: SUCCESS CHECK-IN */}
           {statusType === 'SUCCESS_CHECK_IN' && verifiedEmployee && attendanceRecord && (
             <div className="text-center space-y-5 animate-in fade-in zoom-in duration-300">
-              <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                 <span>Attendance Verified</span>
               </div>
 
-              {/* Employee Registered Photo */}
-              <div className="relative mx-auto w-28 h-28 rounded-full ring-4 ring-emerald-500/40 shadow-xl overflow-hidden bg-slate-800">
+              {/* Registered Employee Photo with Rose Gold Ring */}
+              <div className="relative mx-auto w-28 h-28 rounded-full ring-4 ring-[#e8c3b9] shadow-xl overflow-hidden bg-slate-100">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={verifiedEmployee.photoUrl}
@@ -314,54 +293,54 @@ export default function AttendancePage() {
               </div>
 
               <div>
-                <h2 className="text-2xl font-black text-white">{verifiedEmployee.name}</h2>
+                <h2 className="text-2xl font-black text-slate-900">{verifiedEmployee.name}</h2>
                 <div className="flex items-center justify-center gap-2 mt-1">
-                  <span className="px-2.5 py-0.5 rounded-md bg-blue-500/20 text-blue-300 font-mono text-xs font-bold">
+                  <span className="px-2.5 py-0.5 rounded-md bg-[#fff5f5] text-[#8e4a55] border border-[#ecd2cf] font-mono text-xs font-bold">
                     {verifiedEmployee.employeeId}
                   </span>
-                  <span className="text-slate-400 text-xs font-medium">
+                  <span className="text-slate-500 text-xs font-medium">
                     {verifiedEmployee.department}
                   </span>
                 </div>
               </div>
 
-              <div className="bg-slate-800/80 border border-slate-700 rounded-2xl p-4 space-y-3">
-                <h3 className="text-base font-bold text-cyan-400 tracking-wide">
+              <div className="bg-gradient-to-br from-[#fff7f7] to-[#fcf2f2] border border-[#ebdcdc] rounded-2xl p-4 space-y-3 shadow-xs">
+                <h3 className="text-base font-bold text-[#8e4a55] tracking-wide">
                   Welcome to M Technovate Solutions
                 </h3>
                 <p className="text-[11px] text-slate-400 italic">Innovate at every step</p>
 
-                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-700/60 text-xs">
-                  <div className="bg-slate-900/80 p-2.5 rounded-xl border border-slate-700/40">
-                    <p className="text-[11px] text-slate-400 uppercase font-semibold">Check-In Time</p>
-                    <p className="font-mono text-sm font-black text-emerald-400 mt-0.5">
+                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-[#ebdcdc] text-xs">
+                  <div className="bg-white p-3 rounded-xl border border-[#ebdcdc] shadow-2xs">
+                    <p className="text-[10px] text-slate-500 uppercase font-semibold">Check-In Time</p>
+                    <p className="font-mono text-sm font-black text-emerald-700 mt-0.5">
                       {attendanceRecord.checkInTime}
                     </p>
                   </div>
-                  <div className="bg-slate-900/80 p-2.5 rounded-xl border border-slate-700/40">
-                    <p className="text-[11px] text-slate-400 uppercase font-semibold">Date</p>
-                    <p className="text-xs font-bold text-slate-200 mt-0.5">
+                  <div className="bg-white p-3 rounded-xl border border-[#ebdcdc] shadow-2xs">
+                    <p className="text-[10px] text-slate-500 uppercase font-semibold">Date</p>
+                    <p className="text-xs font-bold text-slate-800 mt-0.5">
                       {attendanceRecord.displayDate}
                     </p>
                   </div>
                 </div>
 
                 {attendanceRecord.status === 'Late' && (
-                  <div className="px-3 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-lg text-amber-300 text-xs font-semibold">
-                    Late Arrival (Shift starts at {settings?.workStartTime || '09:30 AM'})
+                  <div className="px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-xs font-semibold">
+                    Late Arrival (Shift threshold: {settings?.workStartTime || '09:30 AM'})
                   </div>
                 )}
               </div>
 
-              <div className="py-3 px-4 bg-emerald-600 rounded-2xl text-white font-black text-sm tracking-wide shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2">
-                <CheckCircle2 className="w-5 h-5" />
+              <div className="py-3 px-4 bg-gradient-to-r from-[#b76e79] via-[#c5838d] to-[#9e5762] rounded-2xl text-white font-black text-xs tracking-wider uppercase shadow-md shadow-[#b76e79]/25 flex items-center justify-center gap-2">
+                <CheckCircle2 className="w-4 h-4" />
                 <span>Attendance Marked Successfully ✓</span>
               </div>
 
               <button
                 type="button"
                 onClick={handleReset}
-                className="text-xs text-slate-400 hover:text-white flex items-center justify-center gap-1.5 mx-auto pt-1"
+                className="text-xs font-semibold text-[#8e4a55] hover:text-[#b76e79] flex items-center justify-center gap-1.5 mx-auto pt-1 transition-colors"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
                 <span>Mark Another Employee</span>
@@ -372,12 +351,12 @@ export default function AttendancePage() {
           {/* STATE 3: SUCCESS CHECK-OUT */}
           {statusType === 'SUCCESS_CHECK_OUT' && verifiedEmployee && attendanceRecord && (
             <div className="text-center space-y-5 animate-in fade-in zoom-in duration-300">
-              <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-bold">
-                <LogOut className="w-4 h-4 text-cyan-400" />
+              <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-cyan-50 border border-cyan-200 text-cyan-800 text-xs font-bold">
+                <LogOut className="w-4 h-4 text-cyan-600" />
                 <span>Check-Out Recorded</span>
               </div>
 
-              <div className="relative mx-auto w-28 h-28 rounded-full ring-4 ring-cyan-500/40 shadow-xl overflow-hidden bg-slate-800">
+              <div className="relative mx-auto w-28 h-28 rounded-full ring-4 ring-cyan-200 shadow-xl overflow-hidden bg-slate-100">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={verifiedEmployee.photoUrl}
@@ -387,48 +366,48 @@ export default function AttendancePage() {
               </div>
 
               <div>
-                <h2 className="text-2xl font-black text-white">{verifiedEmployee.name}</h2>
-                <p className="text-xs text-slate-400 mt-0.5">
+                <h2 className="text-2xl font-black text-slate-900">{verifiedEmployee.name}</h2>
+                <p className="text-xs text-slate-500 mt-0.5">
                   {verifiedEmployee.employeeId} • {verifiedEmployee.department}
                 </p>
               </div>
 
-              <div className="bg-slate-800/80 border border-slate-700 rounded-2xl p-4 space-y-3">
-                <h3 className="text-sm font-bold text-slate-300">
+              <div className="bg-gradient-to-br from-[#fff7f7] to-[#fcf2f2] border border-[#ebdcdc] rounded-2xl p-4 space-y-3 shadow-xs">
+                <h3 className="text-sm font-bold text-slate-800">
                   Have a great evening from M Technovate Solutions!
                 </h3>
 
-                <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-700/60 text-xs">
-                  <div className="bg-slate-900/80 p-2 rounded-xl">
+                <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[#ebdcdc] text-xs">
+                  <div className="bg-white p-2 rounded-xl border border-[#ebdcdc]">
                     <p className="text-[10px] text-slate-400 uppercase font-semibold">Check-In</p>
-                    <p className="font-mono text-xs font-bold text-slate-200 mt-0.5">
+                    <p className="font-mono text-xs font-bold text-slate-700 mt-0.5">
                       {attendanceRecord.checkInTime}
                     </p>
                   </div>
-                  <div className="bg-slate-900/80 p-2 rounded-xl">
+                  <div className="bg-white p-2 rounded-xl border border-[#ebdcdc]">
                     <p className="text-[10px] text-slate-400 uppercase font-semibold">Check-Out</p>
-                    <p className="font-mono text-xs font-bold text-cyan-400 mt-0.5">
+                    <p className="font-mono text-xs font-bold text-cyan-700 mt-0.5">
                       {attendanceRecord.checkOutTime}
                     </p>
                   </div>
-                  <div className="bg-cyan-950/60 border border-cyan-800/40 p-2 rounded-xl">
-                    <p className="text-[10px] text-cyan-300 uppercase font-semibold">Total Hours</p>
-                    <p className="font-mono text-xs font-black text-cyan-300 mt-0.5">
+                  <div className="bg-emerald-50 border border-emerald-200 p-2 rounded-xl">
+                    <p className="text-[10px] text-emerald-800 uppercase font-semibold">Total Hours</p>
+                    <p className="font-mono text-xs font-black text-emerald-800 mt-0.5">
                       {attendanceRecord.totalHours}
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="py-3 px-4 bg-cyan-600 rounded-2xl text-white font-black text-sm tracking-wide shadow-lg shadow-cyan-600/30 flex items-center justify-center gap-2">
-                <CheckCircle2 className="w-5 h-5" />
+              <div className="py-3 px-4 bg-cyan-600 rounded-2xl text-white font-black text-xs tracking-wider uppercase shadow-md shadow-cyan-600/20 flex items-center justify-center gap-2">
+                <CheckCircle2 className="w-4 h-4" />
                 <span>Check-Out Completed Successfully ✓</span>
               </div>
 
               <button
                 type="button"
                 onClick={handleReset}
-                className="text-xs text-slate-400 hover:text-white flex items-center justify-center gap-1.5 mx-auto pt-1"
+                className="text-xs font-semibold text-[#8e4a55] hover:text-[#b76e79] flex items-center justify-center gap-1.5 mx-auto pt-1 transition-colors"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
                 <span>Mark Another Employee</span>
@@ -439,14 +418,14 @@ export default function AttendancePage() {
           {/* STATE 4: ALREADY COMPLETED */}
           {statusType === 'ALREADY_COMPLETED' && (
             <div className="text-center space-y-5 animate-in fade-in zoom-in duration-300">
-              <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold">
-                <Clock className="w-4 h-4 text-amber-400" />
+              <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold">
+                <Clock className="w-4 h-4 text-amber-600" />
                 <span>Already Checked In</span>
               </div>
 
               {verifiedEmployee && (
                 <div className="space-y-3">
-                  <div className="relative mx-auto w-24 h-24 rounded-full ring-4 ring-amber-500/30 shadow-lg overflow-hidden bg-slate-800">
+                  <div className="relative mx-auto w-24 h-24 rounded-full ring-4 ring-amber-200 shadow-lg overflow-hidden bg-slate-100">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={verifiedEmployee.photoUrl}
@@ -455,44 +434,47 @@ export default function AttendancePage() {
                     />
                   </div>
                   <div>
-                    <h2 className="text-xl font-black text-white">{verifiedEmployee.name}</h2>
-                    <p className="text-xs text-slate-400 mt-0.5">
+                    <h2 className="text-xl font-black text-slate-900">{verifiedEmployee.name}</h2>
+                    <p className="text-xs text-slate-500 mt-0.5">
                       {verifiedEmployee.employeeId} • {verifiedEmployee.department}
                     </p>
                   </div>
                 </div>
               )}
 
-              <div className="bg-slate-800/80 border border-amber-500/20 rounded-2xl p-4 text-xs text-slate-300 space-y-2">
-                <p className="font-semibold text-amber-300">You already marked your attendance today.</p>
+              <div className="bg-amber-50/70 border border-amber-200 rounded-2xl p-4 text-xs text-amber-900 space-y-2">
+                <p className="font-bold">You already marked your attendance today.</p>
                 {attendanceRecord && (
-                  <div className="pt-2 text-slate-400 space-y-1">
+                  <div className="pt-2 text-slate-600 space-y-1 text-left bg-white p-3 rounded-xl border border-amber-100">
                     <p>
                       <strong>Check-In Time:</strong>{' '}
-                      <span className="text-white font-mono">{attendanceRecord.checkInTime}</span>
+                      <span className="text-slate-900 font-mono font-bold">{attendanceRecord.checkInTime}</span>
                     </p>
                     {attendanceRecord.checkOutTime && (
                       <p>
                         <strong>Check-Out Time:</strong>{' '}
-                        <span className="text-white font-mono">{attendanceRecord.checkOutTime}</span>
+                        <span className="text-slate-900 font-mono font-bold">{attendanceRecord.checkOutTime}</span>
                       </p>
                     )}
                     {attendanceRecord.totalHours && (
                       <p>
                         <strong>Total Hours:</strong>{' '}
-                        <span className="text-cyan-400 font-mono font-bold">
+                        <span className="text-emerald-700 font-mono font-bold">
                           {attendanceRecord.totalHours}
                         </span>
                       </p>
                     )}
                   </div>
                 )}
+                <p className="text-[11px] text-slate-500 pt-1">
+                  Duplicate records are protected automatically.
+                </p>
               </div>
 
               <button
                 type="button"
                 onClick={handleReset}
-                className="w-full py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition-colors"
+                className="w-full py-3 bg-[#fff5f5] hover:bg-[#fae8e8] text-[#8e4a55] border border-[#ecd2cf] rounded-xl text-xs font-bold transition-colors"
               >
                 Back to Scanner
               </button>
@@ -502,28 +484,28 @@ export default function AttendancePage() {
           {/* STATE 5: NOT FOUND */}
           {statusType === 'NOT_FOUND' && (
             <div className="text-center space-y-5 animate-in fade-in zoom-in duration-300">
-              <div className="w-16 h-16 rounded-full bg-rose-500/10 border-2 border-rose-500/30 flex items-center justify-center text-rose-500 mx-auto">
+              <div className="w-16 h-16 rounded-full bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600 mx-auto shadow-xs">
                 <AlertCircle className="w-8 h-8" />
               </div>
 
               <div className="space-y-1">
-                <h2 className="text-xl font-black text-white">Employee Not Found</h2>
-                <p className="text-xs text-rose-300 font-semibold">
+                <h2 className="text-xl font-black text-slate-900">Employee Not Found</h2>
+                <p className="text-xs text-rose-700 font-semibold">
                   The Employee ID you entered is not registered.
                 </p>
               </div>
 
-              <div className="bg-rose-950/30 border border-rose-900/40 rounded-2xl p-4 text-xs text-rose-200">
+              <div className="bg-rose-50/80 border border-rose-200 rounded-2xl p-4 text-xs text-rose-800">
                 <p>Please enter a valid Employee ID or contact the M Technovate Solutions administrator.</p>
-                <p className="mt-2 font-mono text-slate-400">
-                  Entered ID: <span className="text-rose-400 font-bold">{employeeId || 'None'}</span>
+                <p className="mt-2 font-mono text-slate-500">
+                  Entered ID: <span className="text-rose-700 font-bold">{employeeId || 'None'}</span>
                 </p>
               </div>
 
               <button
                 type="button"
                 onClick={handleReset}
-                className="w-full py-3 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold transition-colors shadow-md"
+                className="w-full py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition-colors shadow-md shadow-rose-600/20"
               >
                 Try Again
               </button>
@@ -533,35 +515,35 @@ export default function AttendancePage() {
           {/* STATE 6: INACTIVE */}
           {statusType === 'INACTIVE' && (
             <div className="text-center space-y-5 animate-in fade-in zoom-in duration-300">
-              <div className="w-16 h-16 rounded-full bg-amber-500/10 border-2 border-amber-500/30 flex items-center justify-center text-amber-500 mx-auto">
+              <div className="w-16 h-16 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 mx-auto shadow-xs">
                 <ShieldAlert className="w-8 h-8" />
               </div>
 
               <div className="space-y-1">
-                <h2 className="text-xl font-black text-white">Access Denied</h2>
-                <p className="text-xs text-amber-300 font-semibold">
+                <h2 className="text-xl font-black text-slate-900">Access Denied</h2>
+                <p className="text-xs text-amber-800 font-semibold">
                   This employee account is currently inactive.
                 </p>
               </div>
 
               {verifiedEmployee && (
-                <div className="flex items-center gap-3 p-3 bg-slate-800/80 rounded-xl border border-slate-700 text-left">
+                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200 text-left">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={verifiedEmployee.photoUrl}
                     alt={verifiedEmployee.name}
-                    className="w-12 h-12 rounded-full object-cover border border-slate-600"
+                    className="w-12 h-12 rounded-full object-cover border border-slate-300"
                   />
                   <div>
-                    <p className="text-sm font-bold text-white">{verifiedEmployee.name}</p>
-                    <p className="text-xs text-slate-400">
+                    <p className="text-sm font-bold text-slate-900">{verifiedEmployee.name}</p>
+                    <p className="text-xs text-slate-500">
                       {verifiedEmployee.employeeId} • {verifiedEmployee.department}
                     </p>
                   </div>
                 </div>
               )}
 
-              <div className="bg-amber-950/30 border border-amber-900/40 rounded-2xl p-4 text-xs text-amber-200">
+              <div className="bg-amber-50/80 border border-amber-200 rounded-2xl p-4 text-xs text-amber-900">
                 <p>
                   Please contact the administrator to reactivate your account before marking attendance.
                 </p>
@@ -570,7 +552,7 @@ export default function AttendancePage() {
               <button
                 type="button"
                 onClick={handleReset}
-                className="w-full py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition-colors"
+                className="w-full py-3 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold transition-colors shadow-xs"
               >
                 Back to Scanner
               </button>
@@ -580,25 +562,25 @@ export default function AttendancePage() {
           {/* STATE 7: LOCATION ERROR */}
           {statusType === 'LOCATION_ERROR' && (
             <div className="text-center space-y-5 animate-in fade-in zoom-in duration-300">
-              <div className="w-16 h-16 rounded-full bg-rose-500/10 border-2 border-rose-500/30 flex items-center justify-center text-rose-500 mx-auto">
+              <div className="w-16 h-16 rounded-full bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600 mx-auto">
                 <MapPin className="w-8 h-8" />
               </div>
 
               <div className="space-y-1">
-                <h2 className="text-xl font-black text-white">Outside Office Location</h2>
-                <p className="text-xs text-rose-300 font-semibold">
+                <h2 className="text-xl font-black text-slate-900">Outside Office Location</h2>
+                <p className="text-xs text-rose-700 font-semibold">
                   You must be at the M Technovate Solutions office location to mark attendance.
                 </p>
               </div>
 
-              <div className="bg-rose-950/30 border border-rose-900/40 rounded-2xl p-4 text-xs text-rose-200">
+              <div className="bg-rose-50/80 border border-rose-200 rounded-2xl p-4 text-xs text-rose-900">
                 <p>{errorMessage}</p>
               </div>
 
               <button
                 type="button"
                 onClick={handleReset}
-                className="w-full py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition-colors"
+                className="w-full py-3 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold transition-colors"
               >
                 Try Again
               </button>
@@ -607,9 +589,13 @@ export default function AttendancePage() {
         </div>
       </main>
 
-      <footer className="max-w-md mx-auto w-full text-center py-2 space-y-1 text-[11px] text-slate-500">
-        <p>© 2026 M Technovate Solutions. All Rights Reserved.</p>
-        <p>Innovate at every step • Secure Office Entrance Attendance</p>
+      {/* Security Footer */}
+      <footer className="max-w-md mx-auto w-full text-center py-2 space-y-1 text-[11px] text-slate-400 relative z-10">
+        <p className="font-semibold text-[#8e4a55]">© 2026 M Technovate Solutions. All Rights Reserved.</p>
+        <p className="flex items-center justify-center gap-1">
+          <Lock className="w-3 h-3 text-[#b76e79]" />
+          <span>Innovate at every step • Secure Cloud Attendance</span>
+        </p>
       </footer>
     </div>
   );
