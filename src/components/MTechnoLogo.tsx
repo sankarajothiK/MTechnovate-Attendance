@@ -1,78 +1,79 @@
+'use client';
+
 import React from 'react';
+import Image from 'next/image';
 
 interface LogoProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
   variant?: 'light' | 'dark';
   showSubtitle?: boolean;
+  stacked?: boolean;
 }
 
 export default function MTechnoLogo({
   size = 'md',
   variant = 'dark',
   showSubtitle = true,
+  stacked = false,
 }: LogoProps) {
   const iconSizes = {
-    sm: 'w-7 h-7 text-xs',
-    md: 'w-10 h-10 text-sm',
-    lg: 'w-14 h-14 text-base',
-    xl: 'w-20 h-20 text-xl',
+    sm: 'w-8 h-8',
+    md: 'w-11 h-11',
+    lg: 'w-16 h-16',
+    xl: 'w-24 h-24',
   };
 
   const textSizes = {
-    sm: 'text-base font-bold',
-    md: 'text-xl font-extrabold',
-    lg: 'text-2xl font-black',
-    xl: 'text-3xl font-black',
+    sm: 'text-sm font-bold tracking-tight',
+    md: 'text-base sm:text-lg font-black tracking-tight',
+    lg: 'text-xl sm:text-2xl font-black tracking-tight',
+    xl: 'text-2xl sm:text-3xl font-black tracking-tight',
   };
 
   const subtitleSizes = {
-    sm: 'text-[10px]',
-    md: 'text-xs',
-    lg: 'text-sm',
-    xl: 'text-base',
+    sm: 'text-[9px]',
+    md: 'text-[11px]',
+    lg: 'text-xs',
+    xl: 'text-sm',
   };
 
-  const isDark = variant === 'dark';
+  const isLight = variant === 'light';
 
   return (
-    <div className="flex items-center gap-3 select-none">
-      {/* Dynamic Geometric Shield Logo */}
+    <div
+      className={`flex items-center gap-3 select-none ${
+        stacked ? 'flex-col text-center' : ''
+      }`}
+    >
+      {/* Official M Technovate Solutions Logo Badge */}
       <div
-        className={`${iconSizes[size]} relative flex items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 via-indigo-600 to-cyan-500 shadow-md shadow-blue-500/20 text-white font-black tracking-wider transition-transform hover:scale-105`}
+        className={`${iconSizes[size]} relative shrink-0 rounded-xl overflow-hidden bg-white p-0.5 shadow-md shadow-blue-500/10 border border-slate-200/80 transition-transform hover:scale-105`}
       >
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="w-3/5 h-3/5"
-        >
-          <path d="M4 19V5l8 7 8-7v14" />
-        </svg>
-        {/* Subtle Tech Pulse Dot */}
-        <span className="absolute -top-1 -right-1 flex h-3 w-3">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-3 w-3 bg-cyan-500"></span>
-        </span>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/logo.png"
+          alt="M Technovate Solutions Logo"
+          className="w-full h-full object-contain"
+        />
       </div>
 
-      <div>
-        <div className="flex items-center gap-1.5 leading-none">
+      <div className={stacked ? 'mt-1' : ''}>
+        <div className="leading-tight">
           <span
-            className={`${textSizes[size]} tracking-tight ${
-              isDark ? 'text-slate-900' : 'text-white'
+            className={`${textSizes[size]} ${
+              isLight ? 'text-white' : 'text-slate-900'
             }`}
           >
-            M <span className="text-blue-600">TECHNO</span>
+            M TECHNOVATE <span className="text-blue-600 font-extrabold">SOLUTIONS</span>
           </span>
         </div>
         {showSubtitle && (
           <p
-            className={`${subtitleSizes[size]} tracking-wider uppercase font-semibold text-slate-400 mt-1`}
+            className={`${subtitleSizes[size]} font-medium tracking-wide ${
+              isLight ? 'text-cyan-300' : 'text-slate-500'
+            } mt-0.5`}
           >
-            Attendance Portal
+            Innovate at every step
           </p>
         )}
       </div>

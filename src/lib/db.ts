@@ -16,16 +16,14 @@ import {
   setDoc,
   updateDoc,
   deleteDoc,
-  query,
-  where,
   getDoc,
+  writeBatch,
 } from 'firebase/firestore';
 
-const EMPLOYEES_STORAGE_KEY = 'mtechno_employees_v1';
-const ATTENDANCE_STORAGE_KEY = 'mtechno_attendance_v1';
-const SETTINGS_STORAGE_KEY = 'mtechno_settings_v1';
+const EMPLOYEES_STORAGE_KEY = 'mtechnovate_employees_v2';
+const ATTENDANCE_STORAGE_KEY = 'mtechnovate_attendance_v2';
+const SETTINGS_STORAGE_KEY = 'mtechnovate_settings_v2';
 
-// Seed past demo attendance for MT001 and MT002 to make the dashboard lively on first load
 function generateInitialAttendance(): AttendanceRecord[] {
   const todayKey = getCurrentDateKey();
   const todayDisplay = formatDisplayDate(todayKey);
@@ -68,11 +66,10 @@ function generateInitialAttendance(): AttendanceRecord[] {
       status: 'Present',
       createdAt: `${todayKey}T09:10:00.000Z`,
       updatedAt: `${todayKey}T09:10:00.000Z`,
-    }
+    },
   ];
 }
 
-// In-memory store for server-side or non-window environments
 let memEmployees: Employee[] = [...INITIAL_EMPLOYEES];
 let memAttendance: AttendanceRecord[] = generateInitialAttendance();
 let memSettings: OfficeSettings = { ...INITIAL_SETTINGS };
@@ -101,25 +98,65 @@ function setLocalStore<T>(key: string, val: T): void {
   }
 }
 
-// --- EMPLOYEE MANAGEMENT ---
+/**
+ * Deduplicates employee records by employeeId (case-insensitive)
+ * Retains the latest version of each unique employee.
+ */
+export function deduplicateEmployees(rawList: Employee[]): Employee[] {
+  const map = new Map<string, Employee>();
+  for (const emp of rawList) {
+    if (!emp || !emp.employeeId) continue;
+    const key = emp.employeeId.trim().toUpperCase();
+    // Later occurrences overwrite earlier ones (or preserve valid data)
+    map.set(key, { ...emp, employeeId: key });
+  }
+  return Array.from(map.values()).sort((a, b) => a.employeeId.localeCompare(b.employeeId));
+}
+
+/**
+ * Deduplicates attendance records by id or (employeeId + date)
+ */
+export function deduplicateAttendance(rawList: AttendanceRecord[]): AttendanceRecord[] {
+  const map = new Map<string, AttendanceRecord>();
+  for (const rec of rawList) {
+    if (!rec || !rec.employeeId || !rec.date) continue;
+    const key = `${rec.employeeId.trim().toUpperCase()}_${rec.date}`;
+    map.set(key, rec);
+  }
+  return Array.from(map.values()).sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+}
+
+// --- EMPLOYEE OPERATIONS ---
 
 export async function getEmployees(): Promise<Employee[]> {
+  // 1. If Firebase Firestore is configured
   if (isFirebaseConfigured() && db) {
     try {
       const querySnapshot = await getDocs(collection(db, 'employees'));
       if (!querySnapshot.empty) {
         const emps: Employee[] = [];
         querySnapshot.forEach((d) => emps.push(d.data() as Employee));
-        // Sort sequentially MT001, MT002...
-        return emps.sort((a, b) => a.employeeId.localeCompare(b.employeeId));
+        const clean = deduplicateEmployees(emps);
+        return clean;
       }
     } catch (e) {
-      console.warn('Firebase getEmployees failed, falling back to local store:', e);
+      console.warn('Firebase getEmployees failed, using local store:', e);
     }
   }
 
-  const emps = getLocalStore<Employee[]>(EMPLOYEES_STORAGE_KEY, memEmployees);
-  return [...emps].sort((a, b) => a.employeeId.localeCompare(b.employeeId));
+  // 2. Local store fallback
+  const raw = getLocalStore<Employee[]>(EMPLOYEES_STORAGE_KEY, memEmployees);
+  const clean = deduplicateEmployees(raw);
+
+  // If duplicates were pruned, update localStorage immediately
+  if (clean.length !== raw.length) {
+    setLocalStore(EMPLOYEES_STORAGE_KEY, clean);
+  }
+
+  memEmployees = clean;
+  return clean;
 }
 
 export async function getEmployeeByEmployeeId(empId: string): Promise<Employee | null> {
@@ -131,7 +168,7 @@ export async function getEmployeeByEmployeeId(empId: string): Promise<Employee |
 /**
  * Automatically computes the next sequential Employee ID:
  * MT001 -> MT002 -> MT003...
- * Checks database to ensure zero duplicates.
+ * Checks database to prevent duplicate IDs.
  */
 export async function getNextEmployeeId(): Promise<string> {
   const employees = await getEmployees();
@@ -156,14 +193,28 @@ export async function createEmployee(
   data: Omit<Employee, 'id' | 'createdAt'>
 ): Promise<{ success: boolean; employee?: Employee; error?: string }> {
   const formattedId = data.employeeId.trim().toUpperCase();
-  const existing = await getEmployeeByEmployeeId(formattedId);
-  if (existing) {
+
+  // Strict check 1: Duplicate Employee ID
+  const existingId = await getEmployeeByEmployeeId(formattedId);
+  if (existingId) {
     return { success: false, error: `Employee ID ${formattedId} already exists in database.` };
+  }
+
+  // Strict check 2: Duplicate Employee Name
+  const allEmployees = await getEmployees();
+  const duplicateName = allEmployees.find(
+    (e) => e.name.trim().toLowerCase() === data.name.trim().toLowerCase()
+  );
+  if (duplicateName) {
+    return {
+      success: false,
+      error: `An employee named "${data.name}" already exists with ID ${duplicateName.employeeId}. Duplicate employees are not permitted.`,
+    };
   }
 
   const newEmployee: Employee = {
     ...data,
-    id: `emp-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+    id: `emp-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
     employeeId: formattedId,
     createdAt: new Date().toISOString(),
   };
@@ -178,8 +229,8 @@ export async function createEmployee(
   }
 
   // 2. Local Store
-  const current = getLocalStore<Employee[]>(EMPLOYEES_STORAGE_KEY, memEmployees);
-  const updated = [...current, newEmployee];
+  const current = await getEmployees();
+  const updated = deduplicateEmployees([...current, newEmployee]);
   setLocalStore(EMPLOYEES_STORAGE_KEY, updated);
   memEmployees = updated;
 
@@ -208,8 +259,9 @@ export async function updateEmployee(
     }
   }
 
-  setLocalStore(EMPLOYEES_STORAGE_KEY, all);
-  memEmployees = all;
+  const clean = deduplicateEmployees(all);
+  setLocalStore(EMPLOYEES_STORAGE_KEY, clean);
+  memEmployees = clean;
 
   return { success: true, employee: updatedEmployee };
 }
@@ -232,6 +284,27 @@ export async function deleteEmployee(employeeId: string): Promise<boolean> {
   return true;
 }
 
+/**
+ * Manually cleans and removes any duplicate employees and duplicate attendance
+ */
+export async function cleanAllDuplicates(): Promise<{ employeeCount: number; removedCount: number }> {
+  const raw = getLocalStore<Employee[]>(EMPLOYEES_STORAGE_KEY, memEmployees);
+  const initialLength = raw.length;
+  const clean = deduplicateEmployees(raw);
+  const removed = initialLength - clean.length;
+
+  setLocalStore(EMPLOYEES_STORAGE_KEY, clean);
+  memEmployees = clean;
+
+  // Clean attendance duplicates too
+  const rawAtt = getLocalStore<AttendanceRecord[]>(ATTENDANCE_STORAGE_KEY, memAttendance);
+  const cleanAtt = deduplicateAttendance(rawAtt);
+  setLocalStore(ATTENDANCE_STORAGE_KEY, cleanAtt);
+  memAttendance = cleanAtt;
+
+  return { employeeCount: clean.length, removedCount: removed };
+}
+
 // --- ATTENDANCE MANAGEMENT ---
 
 export async function getAllAttendance(): Promise<AttendanceRecord[]> {
@@ -241,7 +314,7 @@ export async function getAllAttendance(): Promise<AttendanceRecord[]> {
       if (!snap.empty) {
         const records: AttendanceRecord[] = [];
         snap.forEach((d) => records.push(d.data() as AttendanceRecord));
-        return records.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        return deduplicateAttendance(records);
       }
     } catch (e) {
       console.warn('Firebase getAllAttendance failed:', e);
@@ -249,7 +322,7 @@ export async function getAllAttendance(): Promise<AttendanceRecord[]> {
   }
 
   const records = getLocalStore<AttendanceRecord[]>(ATTENDANCE_STORAGE_KEY, memAttendance);
-  return [...records].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  return deduplicateAttendance(records);
 }
 
 export async function getTodayAttendance(dateKey = getCurrentDateKey()): Promise<AttendanceRecord[]> {
@@ -305,7 +378,48 @@ export async function updateOfficeSettings(updates: Partial<OfficeSettings>): Pr
   return updated;
 }
 
-// --- ATTENDANCE VERIFICATION & MARKING FLOW ---
+// --- SYNC TO FIREBASE (1-CLICK SYNC ALL DATA) ---
+
+export async function syncAllToFirebase(): Promise<{ success: boolean; employeesSynced: number; attendanceSynced: number; error?: string }> {
+  if (!isFirebaseConfigured() || !db) {
+    return { success: false, employeesSynced: 0, attendanceSynced: 0, error: 'Firebase is not connected or configured.' };
+  }
+
+  try {
+    const emps = await getEmployees();
+    const atts = await getAllAttendance();
+    const setts = await getOfficeSettings();
+
+    // 1. Sync Employees
+    for (const emp of emps) {
+      await setDoc(doc(db, 'employees', emp.employeeId), emp);
+    }
+
+    // 2. Sync Attendance
+    for (const att of atts) {
+      await setDoc(doc(db, 'attendance', att.id), att);
+    }
+
+    // 3. Sync Settings
+    await setDoc(doc(db, 'settings', 'office'), setts);
+
+    return {
+      success: true,
+      employeesSynced: emps.length,
+      attendanceSynced: atts.length,
+    };
+  } catch (err: unknown) {
+    console.error('Failed to sync to Firebase:', err);
+    return {
+      success: false,
+      employeesSynced: 0,
+      attendanceSynced: 0,
+      error: err instanceof Error ? err.message : 'Unknown error during Firebase synchronization.',
+    };
+  }
+}
+
+// --- ATTENDANCE VERIFICATION FLOW ---
 
 export async function verifyAndMarkAttendance(
   employeeIdInput: string,
@@ -343,7 +457,7 @@ export async function verifyAndMarkAttendance(
       return {
         success: false,
         type: 'ERROR',
-        message: 'Location verification is required for M Techno office attendance. Please allow GPS location access.',
+        message: 'Location verification is required for M Technovate office attendance. Please allow GPS location access.',
         employee,
       };
     }
@@ -366,7 +480,7 @@ export async function verifyAndMarkAttendance(
       return {
         success: false,
         type: 'ERROR',
-        message: `Outside Office Location. You are approximately ${distance}m away. You must be within ${settings.radiusMeters}m of M Techno office to mark attendance.`,
+        message: `Outside Office Location. You are approximately ${distance}m away. You must be within ${settings.radiusMeters}m of M Technovate office to mark attendance.`,
         employee,
       };
     }
@@ -406,7 +520,7 @@ export async function verifyAndMarkAttendance(
 
     // Save to Local Store
     const allRecords = getLocalStore<AttendanceRecord[]>(ATTENDANCE_STORAGE_KEY, memAttendance);
-    const updated = [newRecord, ...allRecords.filter((r) => r.id !== newRecord.id)];
+    const updated = deduplicateAttendance([newRecord, ...allRecords]);
     setLocalStore(ATTENDANCE_STORAGE_KEY, updated);
     memAttendance = updated;
 
@@ -435,7 +549,7 @@ export async function verifyAndMarkAttendance(
       try {
         await setDoc(doc(db, 'attendance', updatedRecord.id), updatedRecord);
       } catch (e) {
-        console.warn('Firebase updateDoc attendance checkout failed:', e);
+        console.warn('Firebase update attendance checkout failed:', e);
       }
     }
 

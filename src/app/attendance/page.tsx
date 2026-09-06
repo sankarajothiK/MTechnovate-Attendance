@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { verifyAndMarkAttendance, getOfficeSettings } from '@/lib/db';
 import { Employee, AttendanceRecord, OfficeSettings } from '@/types';
-import { formatTime12h, formatDisplayDate, getCurrentDateKey } from '@/lib/dateUtils';
+import { formatTime12h, formatDisplayDate } from '@/lib/dateUtils';
 
 export default function AttendancePage() {
   const [employeeId, setEmployeeId] = useState('');
@@ -49,7 +49,6 @@ export default function AttendancePage() {
     return () => clearInterval(timer);
   }, []);
 
-  // Fetch office settings
   useEffect(() => {
     getOfficeSettings().then(setSettings);
   }, []);
@@ -63,7 +62,7 @@ export default function AttendancePage() {
         colors: ['#2563eb', '#06b6d4', '#10b981', '#6366f1'],
       });
     } catch {
-      // Ignore if canvas-confetti is not loaded
+      // Confetti fallback
     }
   };
 
@@ -81,7 +80,7 @@ export default function AttendancePage() {
     setVerifiedEmployee(null);
     setAttendanceRecord(null);
 
-    // Geolocation capture if geofencing is enabled
+    // Geolocation if geofence is enabled
     let coords: { latitude: number; longitude: number } | undefined = undefined;
     if (settings?.geofenceEnabled && navigator.geolocation) {
       try {
@@ -151,7 +150,7 @@ export default function AttendancePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-950 to-blue-950 text-slate-100 flex flex-col justify-between py-6 px-4 sm:px-6">
-      {/* Top Header */}
+      {/* Header */}
       <header className="max-w-md mx-auto w-full flex items-center justify-between py-2 border-b border-slate-800/80">
         <MTechnoLogo size="sm" variant="light" />
         <div className="text-right">
@@ -166,29 +165,34 @@ export default function AttendancePage() {
         </div>
       </header>
 
-      {/* Main Interactive Attendance Card */}
+      {/* Main Terminal Card */}
       <main className="max-w-md mx-auto w-full my-auto py-6">
         <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl relative overflow-hidden">
-          {/* Subtle Ambient Light Glow */}
           <div className="absolute -top-24 -right-24 w-48 h-48 bg-blue-600/20 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-cyan-600/15 rounded-full blur-3xl pointer-events-none" />
 
-          {/* STATE 1: IDLE / INPUT FORM */}
+          {/* STATE 1: IDLE / FORM */}
           {statusType === 'IDLE' && (
             <div className="space-y-6 text-center">
-              <div className="space-y-1.5">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                  <Sparkles className="w-3 h-3" /> Office Entrance Terminal
-                </span>
-                <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
-                  Employee Attendance
-                </h1>
-                <p className="text-xs text-slate-400">
-                  Enter your assigned Employee ID to verify and record check-in / check-out.
-                </p>
+              <div className="flex justify-center">
+                <div className="w-20 h-20 rounded-2xl overflow-hidden p-1 bg-white border border-slate-700 shadow-md">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/logo.png" alt="M Technovate Solutions" className="w-full h-full object-contain" />
+                </div>
               </div>
 
-              {/* Form Input */}
+              <div className="space-y-1">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-blue-500/10 text-cyan-400 border border-blue-500/20">
+                  <Sparkles className="w-3 h-3" /> Office Entrance Terminal
+                </span>
+                <h1 className="text-2xl font-black text-white">
+                  M Technovate Solutions
+                </h1>
+                <h2 className="text-sm font-semibold text-slate-400">
+                  Employee Attendance
+                </h2>
+              </div>
+
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -240,10 +244,10 @@ export default function AttendancePage() {
                 </button>
               </form>
 
-              {/* Quick Demo Test Buttons for Instant Evaluation */}
+              {/* Quick Demo Test Buttons */}
               <div className="pt-4 border-t border-slate-800/80 text-left">
                 <p className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider mb-2">
-                  Quick Test Profiles (From Database):
+                  Test Profiles (From Database):
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <button
@@ -291,16 +295,15 @@ export default function AttendancePage() {
             </div>
           )}
 
-          {/* STATE 2: SUCCESS CHECK-IN SCREEN */}
+          {/* STATE 2: SUCCESS CHECK-IN */}
           {statusType === 'SUCCESS_CHECK_IN' && verifiedEmployee && attendanceRecord && (
             <div className="text-center space-y-5 animate-in fade-in zoom-in duration-300">
-              {/* Verified Badge */}
               <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                 <span>Attendance Verified</span>
               </div>
 
-              {/* Employee Photo from Registered Database */}
+              {/* Employee Registered Photo */}
               <div className="relative mx-auto w-28 h-28 rounded-full ring-4 ring-emerald-500/40 shadow-xl overflow-hidden bg-slate-800">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -310,7 +313,6 @@ export default function AttendancePage() {
                 />
               </div>
 
-              {/* Employee Details */}
               <div>
                 <h2 className="text-2xl font-black text-white">{verifiedEmployee.name}</h2>
                 <div className="flex items-center justify-center gap-2 mt-1">
@@ -323,11 +325,11 @@ export default function AttendancePage() {
                 </div>
               </div>
 
-              {/* Welcome Message & Time Cards */}
               <div className="bg-slate-800/80 border border-slate-700 rounded-2xl p-4 space-y-3">
                 <h3 className="text-base font-bold text-cyan-400 tracking-wide">
-                  Welcome to M Techno
+                  Welcome to M Technovate Solutions
                 </h3>
+                <p className="text-[11px] text-slate-400 italic">Innovate at every step</p>
 
                 <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-700/60 text-xs">
                   <div className="bg-slate-900/80 p-2.5 rounded-xl border border-slate-700/40">
@@ -351,7 +353,6 @@ export default function AttendancePage() {
                 )}
               </div>
 
-              {/* Confirmation Footer Banner */}
               <div className="py-3 px-4 bg-emerald-600 rounded-2xl text-white font-black text-sm tracking-wide shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2">
                 <CheckCircle2 className="w-5 h-5" />
                 <span>Attendance Marked Successfully ✓</span>
@@ -368,7 +369,7 @@ export default function AttendancePage() {
             </div>
           )}
 
-          {/* STATE 3: SUCCESS CHECK-OUT SCREEN */}
+          {/* STATE 3: SUCCESS CHECK-OUT */}
           {statusType === 'SUCCESS_CHECK_OUT' && verifiedEmployee && attendanceRecord && (
             <div className="text-center space-y-5 animate-in fade-in zoom-in duration-300">
               <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-bold">
@@ -376,7 +377,6 @@ export default function AttendancePage() {
                 <span>Check-Out Recorded</span>
               </div>
 
-              {/* Registered Photo */}
               <div className="relative mx-auto w-28 h-28 rounded-full ring-4 ring-cyan-500/40 shadow-xl overflow-hidden bg-slate-800">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -393,10 +393,9 @@ export default function AttendancePage() {
                 </p>
               </div>
 
-              {/* Check-In, Check-Out & Total Hours Breakdown */}
               <div className="bg-slate-800/80 border border-slate-700 rounded-2xl p-4 space-y-3">
                 <h3 className="text-sm font-bold text-slate-300">
-                  Have a great evening from M Techno!
+                  Have a great evening from M Technovate Solutions!
                 </h3>
 
                 <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-700/60 text-xs">
@@ -437,7 +436,7 @@ export default function AttendancePage() {
             </div>
           )}
 
-          {/* STATE 4: ALREADY COMPLETED ATTENDANCE TODAY */}
+          {/* STATE 4: ALREADY COMPLETED */}
           {statusType === 'ALREADY_COMPLETED' && (
             <div className="text-center space-y-5 animate-in fade-in zoom-in duration-300">
               <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold">
@@ -488,9 +487,6 @@ export default function AttendancePage() {
                     )}
                   </div>
                 )}
-                <p className="text-[11px] text-slate-500 pt-1">
-                  Duplicate attendance records are automatically protected by the system.
-                </p>
               </div>
 
               <button
@@ -503,7 +499,7 @@ export default function AttendancePage() {
             </div>
           )}
 
-          {/* STATE 5: INVALID EMPLOYEE ID (NOT FOUND) */}
+          {/* STATE 5: NOT FOUND */}
           {statusType === 'NOT_FOUND' && (
             <div className="text-center space-y-5 animate-in fade-in zoom-in duration-300">
               <div className="w-16 h-16 rounded-full bg-rose-500/10 border-2 border-rose-500/30 flex items-center justify-center text-rose-500 mx-auto">
@@ -518,7 +514,7 @@ export default function AttendancePage() {
               </div>
 
               <div className="bg-rose-950/30 border border-rose-900/40 rounded-2xl p-4 text-xs text-rose-200">
-                <p>Please verify your Employee ID and try again, or contact the M Techno administrator.</p>
+                <p>Please enter a valid Employee ID or contact the M Technovate Solutions administrator.</p>
                 <p className="mt-2 font-mono text-slate-400">
                   Entered ID: <span className="text-rose-400 font-bold">{employeeId || 'None'}</span>
                 </p>
@@ -534,7 +530,7 @@ export default function AttendancePage() {
             </div>
           )}
 
-          {/* STATE 6: INACTIVE EMPLOYEE (ACCESS DENIED) */}
+          {/* STATE 6: INACTIVE */}
           {statusType === 'INACTIVE' && (
             <div className="text-center space-y-5 animate-in fade-in zoom-in duration-300">
               <div className="w-16 h-16 rounded-full bg-amber-500/10 border-2 border-amber-500/30 flex items-center justify-center text-amber-500 mx-auto">
@@ -567,7 +563,7 @@ export default function AttendancePage() {
 
               <div className="bg-amber-950/30 border border-amber-900/40 rounded-2xl p-4 text-xs text-amber-200">
                 <p>
-                  Attendance cannot be recorded for deactivated accounts. Please contact the M Techno HR or Administrator to reactivate your profile.
+                  Please contact the administrator to reactivate your account before marking attendance.
                 </p>
               </div>
 
@@ -581,7 +577,7 @@ export default function AttendancePage() {
             </div>
           )}
 
-          {/* STATE 7: LOCATION / GEOFENCE ERROR */}
+          {/* STATE 7: LOCATION ERROR */}
           {statusType === 'LOCATION_ERROR' && (
             <div className="text-center space-y-5 animate-in fade-in zoom-in duration-300">
               <div className="w-16 h-16 rounded-full bg-rose-500/10 border-2 border-rose-500/30 flex items-center justify-center text-rose-500 mx-auto">
@@ -591,15 +587,12 @@ export default function AttendancePage() {
               <div className="space-y-1">
                 <h2 className="text-xl font-black text-white">Outside Office Location</h2>
                 <p className="text-xs text-rose-300 font-semibold">
-                  You must be at the M Techno office location to mark attendance.
+                  You must be at the M Technovate Solutions office location to mark attendance.
                 </p>
               </div>
 
               <div className="bg-rose-950/30 border border-rose-900/40 rounded-2xl p-4 text-xs text-rose-200">
                 <p>{errorMessage}</p>
-                <p className="mt-2 text-[11px] text-slate-400">
-                  Ensure GPS is enabled on your phone and you are within the designated office radius.
-                </p>
               </div>
 
               <button
@@ -614,10 +607,9 @@ export default function AttendancePage() {
         </div>
       </main>
 
-      {/* Corporate Security Footer */}
       <footer className="max-w-md mx-auto w-full text-center py-2 space-y-1 text-[11px] text-slate-500">
-        <p>© 2026 M Techno Inc. All Rights Reserved.</p>
-        <p>Office Entrance Attendance System • Secure Identity Verification</p>
+        <p>© 2026 M Technovate Solutions. All Rights Reserved.</p>
+        <p>Innovate at every step • Secure Office Entrance Attendance</p>
       </footer>
     </div>
   );

@@ -13,8 +13,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "M Techno • Employee Attendance Management System",
-  description: "Enterprise QR Attendance & Identity Verification Portal for M Techno",
+  title: "M Technovate Solutions • Employee Attendance Portal",
+  description: "Official QR Attendance & Identity Verification Portal for M Technovate Solutions. Innovate at every step.",
+  icons: {
+    icon: "/logo.png",
+  },
 };
 
 export default function RootLayout({

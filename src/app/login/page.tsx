@@ -44,16 +44,15 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-950 to-blue-950 flex flex-col justify-center items-center p-4">
       <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-8 sm:p-10 border border-slate-100 relative overflow-hidden">
-        {/* Ambient Top Glow */}
         <div className="absolute -top-12 -right-12 w-32 h-32 bg-blue-500/20 rounded-full blur-2xl" />
 
         <div className="text-center mb-8">
-          <div className="flex justify-center mb-3">
-            <MTechnoLogo size="lg" variant="dark" />
+          <div className="flex justify-center mb-4">
+            <MTechnoLogo size="lg" variant="dark" stacked />
           </div>
           <h2 className="text-2xl font-black text-slate-900 tracking-tight">Admin Portal</h2>
           <p className="text-xs text-slate-500 mt-1 font-medium">
-            Sign in to manage employees, QR codes, and company attendance
+            Sign in to manage employee records, attendance, and Firebase cloud storage
           </p>
         </div>
 
@@ -115,7 +114,6 @@ export default function LoginPage() {
           </button>
         </form>
 
-        {/* Quick Demo Credentials Autofill */}
         <div className="mt-6 pt-5 border-t border-slate-100">
           <div className="bg-blue-50/70 border border-blue-100 rounded-xl p-3 flex items-center justify-between">
             <div className="text-[11px] text-blue-900">

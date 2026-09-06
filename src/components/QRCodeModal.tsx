@@ -61,7 +61,7 @@ export default function QRCodeModal({ isOpen, onClose }: QRCodeModalProps) {
     if (!qrDataUrl) return;
     const a = document.createElement('a');
     a.href = qrDataUrl;
-    a.download = 'M-Techno-Attendance-QR.png';
+    a.download = 'M-Technovate-Solutions-QR.png';
     a.click();
   };
 
@@ -84,33 +84,44 @@ export default function QRCodeModal({ isOpen, onClose }: QRCodeModalProps) {
           </button>
         </div>
 
-        {/* Modal Body / Printable Poster Preview */}
+        {/* Printable Poster */}
         <div className="p-6 md:p-8 space-y-6">
           <div
             id="printable-poster"
             ref={posterRef}
             className="bg-white border-2 border-slate-200 rounded-2xl p-6 text-center space-y-4 shadow-xs"
           >
-            <div className="flex justify-center mb-1">
-              <MTechnoLogo size="lg" />
+            <div className="flex flex-col items-center justify-center gap-2">
+              {/* Official Logo */}
+              <div className="w-20 h-20 rounded-2xl overflow-hidden p-1 bg-white border border-slate-200 shadow-sm">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/logo.png"
+                  alt="M Technovate Solutions"
+                  className="w-full h-full object-contain"
+                />
+              </div>
+              <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+                M TECHNOVATE SOLUTIONS
+              </h2>
+              <p className="text-xs text-blue-600 font-bold uppercase tracking-wider -mt-1">
+                Innovate at every step
+              </p>
             </div>
 
             <div>
-              <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-                M Techno Attendance
-              </h2>
-              <p className="text-xs text-slate-500 font-medium tracking-wide uppercase mt-0.5">
+              <p className="text-xs text-slate-500 font-medium tracking-wide uppercase">
                 Official Office Entrance Check-In & Check-Out
               </p>
             </div>
 
-            {/* Sharp QR Code Display */}
+            {/* QR Code Display */}
             <div className="flex justify-center p-3 bg-slate-50 rounded-xl border border-slate-100 max-w-[280px] mx-auto">
               {qrDataUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={qrDataUrl}
-                  alt="M Techno Attendance QR Code"
+                  alt="M Technovate Solutions Attendance QR Code"
                   className="w-56 h-56 rounded-lg shadow-2xs"
                 />
               ) : (
@@ -127,8 +138,8 @@ export default function QRCodeModal({ isOpen, onClose }: QRCodeModalProps) {
                 How to Mark Attendance:
               </p>
               <ol className="list-decimal list-inside space-y-0.5 text-slate-700 pl-1">
-                <li>Scan this QR code using your mobile phone camera</li>
-                <li>The secure M Techno Attendance portal will open</li>
+                <li>Scan this QR code using your smartphone camera</li>
+                <li>The secure M Technovate Solutions Attendance portal will open</li>
                 <li>Enter your Employee ID (e.g. <span className="font-semibold text-blue-700">MT001</span>)</li>
                 <li>Click <strong>Verify & Mark Attendance</strong></li>
               </ol>
@@ -137,11 +148,11 @@ export default function QRCodeModal({ isOpen, onClose }: QRCodeModalProps) {
             {/* Security Note */}
             <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-400">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Office Entrance Security Protected • Server-Timestamped</span>
+              <span>Office Entrance Security Protected • Cloud Database Timestamped</span>
             </div>
           </div>
 
-          {/* URL & Quick Actions */}
+          {/* URL & Actions */}
           <div className="space-y-2">
             <label className="text-xs font-semibold text-slate-600 block">
               Attendance Portal URL:
@@ -164,7 +175,6 @@ export default function QRCodeModal({ isOpen, onClose }: QRCodeModalProps) {
             </div>
           </div>
 
-          {/* Action Buttons */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2">
             <button
               type="button"

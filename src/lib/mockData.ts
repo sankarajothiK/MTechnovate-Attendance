@@ -1,4 +1,4 @@
-import { Employee, AttendanceRecord, OfficeSettings } from '@/types';
+import { Employee, OfficeSettings } from '@/types';
 
 export const INITIAL_EMPLOYEES: Employee[] = [
   {
@@ -9,7 +9,7 @@ export const INITIAL_EMPLOYEES: Employee[] = [
     department: 'Development',
     designation: 'Senior Full Stack Engineer',
     phone: '+91 98765 43210',
-    email: 'naveen.kumar@mtechno.com',
+    email: 'naveen.kumar@mtechnovate.com',
     joiningDate: '2024-01-15',
     status: 'Active',
     createdAt: '2024-01-15T09:00:00.000Z',
@@ -22,7 +22,7 @@ export const INITIAL_EMPLOYEES: Employee[] = [
     department: 'Testing',
     designation: 'QA Lead Specialist',
     phone: '+91 98765 43211',
-    email: 'rahul.kumar@mtechno.com',
+    email: 'rahul.kumar@mtechnovate.com',
     joiningDate: '2024-02-01',
     status: 'Active',
     createdAt: '2024-02-01T09:00:00.000Z',
@@ -35,7 +35,7 @@ export const INITIAL_EMPLOYEES: Employee[] = [
     department: 'UI/UX Design',
     designation: 'Lead UI/UX Designer',
     phone: '+91 98765 43212',
-    email: 'priya.sharma@mtechno.com',
+    email: 'priya.sharma@mtechnovate.com',
     joiningDate: '2024-03-10',
     status: 'Active',
     createdAt: '2024-03-10T09:00:00.000Z',
@@ -48,7 +48,7 @@ export const INITIAL_EMPLOYEES: Employee[] = [
     department: 'Human Resources',
     designation: 'HR & Operations Manager',
     phone: '+91 98765 43213',
-    email: 'anita.verma@mtechno.com',
+    email: 'anita.verma@mtechnovate.com',
     joiningDate: '2023-11-20',
     status: 'Active',
     createdAt: '2023-11-20T09:00:00.000Z',
@@ -61,18 +61,18 @@ export const INITIAL_EMPLOYEES: Employee[] = [
     department: 'Development',
     designation: 'Backend Architect',
     phone: '+91 98765 43214',
-    email: 'vikram.singh@mtechno.com',
+    email: 'vikram.singh@mtechnovate.com',
     joiningDate: '2024-04-01',
-    status: 'Inactive', // For testing inactive validation
+    status: 'Inactive',
     createdAt: '2024-04-01T09:00:00.000Z',
   },
 ];
 
 export const INITIAL_SETTINGS: OfficeSettings = {
-  officeName: 'M Techno Headquarters',
+  officeName: 'M Technovate Solutions Headquarters',
   officeAddress: 'Tech Hub Park, Tower 4, Cyber City',
-  geofenceEnabled: false, // Default false so testing anywhere works out of the box
-  latitude: 12.9716, // Bangalore Tech Hub default coordinates
+  geofenceEnabled: false,
+  latitude: 12.9716,
   longitude: 77.5946,
   radiusMeters: 150,
   workStartTime: '09:30 AM',

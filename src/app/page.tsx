@@ -43,15 +43,31 @@ export default function HomePage() {
       <main className="max-w-5xl mx-auto w-full px-6 py-12 text-center space-y-8">
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-cyan-400 text-xs font-bold tracking-wide">
           <Sparkles className="w-4 h-4" />
-          <span>Next-Gen Corporate Attendance Platform</span>
+          <span>Official Corporate Attendance Portal</span>
         </div>
 
-        <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-white max-w-3xl mx-auto leading-tight">
-          Modern Attendance Management for <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-400 to-emerald-400">M Techno</span>
+        <div className="flex justify-center mb-2">
+          <div className="w-28 h-28 rounded-3xl overflow-hidden p-2 bg-white border border-slate-700 shadow-xl shadow-blue-500/10">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo.png"
+              alt="M Technovate Solutions"
+              className="w-full h-full object-contain"
+            />
+          </div>
+        </div>
+
+        <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-white max-w-3xl mx-auto leading-tight">
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-400 to-emerald-400">
+            M TECHNOVATE SOLUTIONS
+          </span>
         </h1>
+        <p className="text-sm font-bold tracking-widest text-cyan-400 uppercase -mt-4">
+          Innovate at every step
+        </p>
 
         <p className="text-sm sm:text-base text-slate-400 max-w-2xl mx-auto leading-relaxed">
-          Office entrance QR code scanning, automated sequential employee IDs, photo facial verification, duplicate check-in / check-out protection, and live admin analytics.
+          Office entrance QR code scanning, automated sequential employee IDs, photo facial verification, duplicate check-in / check-out protection, and live Firebase cloud storage.
         </p>
 
         {/* Dual Primary Flow Cards */}
@@ -138,16 +154,16 @@ export default function HomePage() {
           <div className="p-4 rounded-2xl bg-slate-900/40 border border-slate-800/80 space-y-1">
             <Database className="w-4 h-4 text-cyan-400" />
             <p className="font-bold text-white">Firebase Firestore</p>
-            <p className="text-[11px] text-slate-500">Cloud database with seamless dual-mode fallback</p>
+            <p className="text-[11px] text-slate-500">Cloud database with live sync & dual-mode fallback</p>
           </div>
         </div>
       </main>
 
       {/* Footer */}
       <footer className="max-w-7xl mx-auto w-full px-6 py-6 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2">
-        <p>© 2026 M Techno. All rights reserved.</p>
+        <p>© 2026 M Technovate Solutions. All rights reserved. • Innovate at every step</p>
         <p className="font-mono text-[11px] text-slate-400">
-          Admin Demo: <span className="text-blue-400">admin@mtechno.com</span> / <span className="text-blue-400">admin123</span>
+          Admin: <span className="text-blue-400">admin@mtechno.com</span> / <span className="text-blue-400">admin123</span>
         </p>
       </footer>
     </div>

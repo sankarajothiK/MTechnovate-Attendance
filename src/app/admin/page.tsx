@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
-import MTechnoLogo from '@/components/MTechnoLogo';
 import AddEmployeeModal from '@/components/AddEmployeeModal';
 import EditEmployeeModal from '@/components/EditEmployeeModal';
 import EmployeeProfileModal from '@/components/EmployeeProfileModal';
@@ -25,13 +24,15 @@ import {
   CheckCircle,
   ExternalLink,
   ShieldCheck,
-  AlertTriangle,
+  Sparkles,
+  Database,
 } from 'lucide-react';
 import {
   getEmployees,
   getTodayAttendance,
   updateEmployee,
   getOfficeSettings,
+  cleanAllDuplicates,
 } from '@/lib/db';
 import { Employee, AttendanceRecord, OfficeSettings } from '@/types';
 import { getStoredAdmin } from '@/lib/auth';
@@ -44,6 +45,7 @@ export default function AdminDashboard() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [todayAttendance, setTodayAttendance] = useState<AttendanceRecord[]>([]);
   const [settings, setSettings] = useState<OfficeSettings | null>(null);
+  const [cleanMessage, setCleanMessage] = useState<string | null>(null);
 
   // Filters & Search
   const [searchTerm, setSearchTerm] = useState('');
@@ -57,7 +59,6 @@ export default function AdminDashboard() {
   const [isFirebaseModalOpen, setIsFirebaseModalOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
 
-  // Guard route
   useEffect(() => {
     const admin = getStoredAdmin();
     if (!admin) {
@@ -87,18 +88,25 @@ export default function AdminDashboard() {
     loadData();
   }, []);
 
-  // Compute Metrics
+  const handleCleanDuplicates = async () => {
+    const res = await cleanAllDuplicates();
+    await loadData();
+    if (res.removedCount > 0) {
+      setCleanMessage(`Removed ${res.removedCount} duplicate record(s)! Now showing ${res.employeeCount} unique employees.`);
+    } else {
+      setCleanMessage(`Database is clean! All ${res.employeeCount} employees have unique IDs.`);
+    }
+    setTimeout(() => setCleanMessage(null), 4000);
+  };
+
+  // Metrics
   const totalEmployees = employees.length;
   const activeEmployees = employees.filter((e) => e.status === 'Active').length;
-
-  // Present today = records with status Present or Late
   const presentRecords = todayAttendance.filter((r) => r.status === 'Present');
   const lateRecords = todayAttendance.filter((r) => r.status === 'Late');
   const totalPresent = todayAttendance.length;
-  // Absent = active employees who do NOT have an attendance record today
   const absentCount = Math.max(0, activeEmployees - totalPresent);
 
-  // Helper to get attendance status for employee
   const getEmployeeTodayStatus = (empId: string): { text: string; color: string; record?: AttendanceRecord } => {
     const rec = todayAttendance.find((r) => r.employeeId.toUpperCase() === empId.toUpperCase());
     if (!rec) {
@@ -125,7 +133,6 @@ export default function AdminDashboard() {
     };
   };
 
-  // Toggle Active/Inactive status
   const handleToggleStatus = async (emp: Employee) => {
     const newStatus = emp.status === 'Active' ? 'Inactive' : 'Active';
     const confirmMsg = `Are you sure you want to set ${emp.name} (${emp.employeeId}) to ${newStatus}?`;
@@ -135,7 +142,6 @@ export default function AdminDashboard() {
     }
   };
 
-  // Filtered employees
   const filteredEmployees = employees.filter((emp) => {
     const matchesSearch =
       emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -157,23 +163,32 @@ export default function AdminDashboard() {
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        {/* Page Header with Action Buttons */}
+        {/* Page Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                M Techno Admin Dashboard
+                M Technovate Solutions Dashboard
               </h1>
               <span className="px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-700 text-xs font-bold font-mono">
                 {formatDisplayDate(getCurrentDateKey())}
               </span>
             </div>
             <p className="text-xs sm:text-sm text-slate-500 mt-1">
-              Monitor real-time office attendance, generate QR codes, and manage employee profiles
+              Innovate at every step • Enterprise Employee Attendance & Cloud Data Storage
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setIsFirebaseModalOpen(true)}
+              className="flex items-center gap-2 px-3.5 py-2.5 bg-white hover:bg-slate-50 text-blue-700 border border-blue-200 rounded-xl text-xs font-bold shadow-2xs transition-all active:scale-95"
+            >
+              <Database className="w-4 h-4 text-blue-600" />
+              <span>Connect Firebase</span>
+            </button>
+
             <button
               type="button"
               onClick={() => setIsQRModalOpen(true)}
@@ -202,9 +217,15 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* METRICS CARDS: Total Employees, Today's Attendance, Absent, Late */}
+        {cleanMessage && (
+          <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl flex items-center gap-2 text-xs font-bold shadow-xs">
+            <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>{cleanMessage}</span>
+          </div>
+        )}
+
+        {/* METRICS CARDS */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-          {/* Total Employees */}
           <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex items-center justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
@@ -212,7 +233,7 @@ export default function AdminDashboard() {
               </p>
               <h3 className="text-3xl font-black text-slate-900 mt-1">{totalEmployees}</h3>
               <p className="text-[11px] text-slate-400 mt-0.5">
-                {activeEmployees} Active accounts
+                {activeEmployees} Active (Strictly Deduplicated)
               </p>
             </div>
             <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
@@ -220,7 +241,6 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* Today's Attendance (Present) */}
           <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex items-center justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-wider text-emerald-600">
@@ -234,21 +254,19 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* Absent */}
           <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex items-center justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-wider text-rose-500">
                 Absent Today
               </p>
               <h3 className="text-3xl font-black text-rose-600 mt-1">{absentCount}</h3>
-              <p className="text-[11px] text-slate-400 mt-0.5">Not yet marked</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">Not yet checked in</p>
             </div>
             <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center">
               <UserX className="w-6 h-6" />
             </div>
           </div>
 
-          {/* Late Employees */}
           <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex items-center justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-wider text-amber-600">
@@ -265,15 +283,15 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Office Entrance Banner Shortcut */}
-        <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 rounded-2xl p-6 text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-md">
+        {/* Office Entrance Banner */}
+        <div className="bg-gradient-to-r from-blue-900 via-indigo-950 to-slate-900 rounded-2xl p-6 text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-md">
           <div className="space-y-1.5 text-center md:text-left">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-blue-500/20 text-blue-300 border border-blue-400/20">
-              <QrCode className="w-3.5 h-3.5" /> Entrance Scanning Terminal
+              <QrCode className="w-3.5 h-3.5" /> M Technovate Solutions Entrance Scanner
             </span>
-            <h2 className="text-xl font-bold">Office Entrance QR Code Ready</h2>
+            <h2 className="text-xl font-bold">Official Office Entrance QR Code</h2>
             <p className="text-xs text-slate-300 max-w-xl">
-              Display the entrance QR code on a screen or print the official poster for your office door. Employees scan and enter their MT ID to check in.
+              Display this QR code at the entrance or print the official poster. Employees scan on mobile to verify their registered face photo and record attendance.
             </p>
           </div>
 
@@ -289,24 +307,39 @@ export default function AdminDashboard() {
               target="_blank"
               className="flex items-center gap-1.5 px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition-all"
             >
-              <span>Test Scanner</span>
+              <span>Open Scanner</span>
               <ExternalLink className="w-3.5 h-3.5" />
             </Link>
           </div>
         </div>
 
-        {/* EMPLOYEE DIRECTORY & TODAY'S ATTENDANCE TABLE */}
+        {/* EMPLOYEE DIRECTORY & TABLE */}
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
-          {/* Table Header Controls */}
           <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h2 className="text-lg font-bold text-slate-900">Registered Employees</h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-bold text-slate-900">Registered Employees</h2>
+                <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs font-bold">
+                  {filteredEmployees.length} unique
+                </span>
+              </div>
               <p className="text-xs text-slate-500">
-                Manage employees, verify face photo, and track attendance status
+                Sequential auto-generated ID • Verified photo • Real-time attendance
               </p>
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
+              {/* Clean Duplicates Button */}
+              <button
+                type="button"
+                onClick={handleCleanDuplicates}
+                className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-colors"
+                title="Verify and remove any duplicate employees"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                <span>Remove Duplicates</span>
+              </button>
+
               {/* Search */}
               <div className="relative">
                 <input
@@ -335,7 +368,6 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* Table */}
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50/80 text-slate-600 font-bold uppercase tracking-wider text-[10px] border-b border-slate-100">
@@ -367,14 +399,12 @@ export default function AdminDashboard() {
                     const todayStatus = getEmployeeTodayStatus(emp.employeeId);
                     return (
                       <tr key={emp.employeeId} className="hover:bg-slate-50/60 transition-colors">
-                        {/* Employee ID */}
                         <td className="py-3.5 px-4 sm:px-6">
                           <span className="font-mono font-bold text-xs px-2.5 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-md">
                             {emp.employeeId}
                           </span>
                         </td>
 
-                        {/* Photo */}
                         <td className="py-3.5 px-4">
                           <div className="relative w-10 h-10 rounded-full ring-2 ring-slate-100 overflow-hidden bg-slate-100 shadow-2xs">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -386,18 +416,13 @@ export default function AdminDashboard() {
                           </div>
                         </td>
 
-                        {/* Name */}
                         <td className="py-3.5 px-4">
                           <div className="font-bold text-slate-900 text-sm">{emp.name}</div>
                           <div className="text-[11px] text-slate-400">{emp.designation}</div>
                         </td>
 
-                        {/* Department */}
-                        <td className="py-3.5 px-4">
-                          <span className="text-slate-600">{emp.department}</span>
-                        </td>
+                        <td className="py-3.5 px-4 text-slate-600">{emp.department}</td>
 
-                        {/* Status (Active / Inactive) */}
                         <td className="py-3.5 px-4">
                           <span
                             className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold ${
@@ -410,7 +435,6 @@ export default function AdminDashboard() {
                           </span>
                         </td>
 
-                        {/* Today's Attendance */}
                         <td className="py-3.5 px-4">
                           <span
                             className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold border ${todayStatus.color}`}
@@ -419,10 +443,8 @@ export default function AdminDashboard() {
                           </span>
                         </td>
 
-                        {/* Actions */}
                         <td className="py-3.5 px-4 sm:px-6 text-right">
                           <div className="flex items-center justify-end gap-1.5">
-                            {/* View Employee */}
                             <button
                               type="button"
                               onClick={() => {
@@ -430,12 +452,11 @@ export default function AdminDashboard() {
                                 setIsProfileModalOpen(true);
                               }}
                               className="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                              title="View Employee Profile"
+                              title="View Profile"
                             >
                               <Eye className="w-4 h-4" />
                             </button>
 
-                            {/* Edit Employee */}
                             <button
                               type="button"
                               onClick={() => {
@@ -448,7 +469,6 @@ export default function AdminDashboard() {
                               <Edit className="w-4 h-4" />
                             </button>
 
-                            {/* Deactivate / Activate Employee */}
                             <button
                               type="button"
                               onClick={() => handleToggleStatus(emp)}
@@ -457,11 +477,7 @@ export default function AdminDashboard() {
                                   ? 'text-slate-400 hover:text-rose-600 hover:bg-rose-50'
                                   : 'text-slate-400 hover:text-emerald-600 hover:bg-emerald-50'
                               }`}
-                              title={
-                                emp.status === 'Active'
-                                  ? 'Deactivate Employee'
-                                  : 'Reactivate Employee'
-                              }
+                              title={emp.status === 'Active' ? 'Deactivate' : 'Reactivate'}
                             >
                               <PowerOff className="w-4 h-4" />
                             </button>
@@ -477,7 +493,6 @@ export default function AdminDashboard() {
         </div>
       </main>
 
-      {/* Modals */}
       <AddEmployeeModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
@@ -502,10 +517,10 @@ export default function AdminDashboard() {
       />
 
       <QRCodeModal isOpen={isQRModalOpen} onClose={() => setIsQRModalOpen(false)} />
-
       <FirebaseSettingsModal
         isOpen={isFirebaseModalOpen}
         onClose={() => setIsFirebaseModalOpen(false)}
+        onConfigChanged={() => loadData()}
       />
     </div>
   );
