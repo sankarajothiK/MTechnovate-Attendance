@@ -20,58 +20,16 @@ import {
   writeBatch,
 } from 'firebase/firestore';
 
-const EMPLOYEES_STORAGE_KEY = 'mtechnovate_employees_v2';
-const ATTENDANCE_STORAGE_KEY = 'mtechnovate_attendance_v2';
-const SETTINGS_STORAGE_KEY = 'mtechnovate_settings_v2';
+const EMPLOYEES_STORAGE_KEY = 'mtechnovate_employees_v3';
+const ATTENDANCE_STORAGE_KEY = 'mtechnovate_attendance_v3';
+const SETTINGS_STORAGE_KEY = 'mtechnovate_settings_v3';
 
 function generateInitialAttendance(): AttendanceRecord[] {
-  const todayKey = getCurrentDateKey();
-  const todayDisplay = formatDisplayDate(todayKey);
-
-  return [
-    {
-      id: 'att-mt001-today',
-      employeeId: 'MT001',
-      employeeName: 'Naveen Kumar',
-      department: 'Development',
-      date: todayKey,
-      displayDate: todayDisplay,
-      checkInTime: '09:14 AM',
-      checkOutTime: '06:02 PM',
-      totalHours: '8h 48m',
-      status: 'Present',
-      createdAt: `${todayKey}T09:14:00.000Z`,
-      updatedAt: `${todayKey}T18:02:00.000Z`,
-    },
-    {
-      id: 'att-mt003-today',
-      employeeId: 'MT003',
-      employeeName: 'Priya Sharma',
-      department: 'UI/UX Design',
-      date: todayKey,
-      displayDate: todayDisplay,
-      checkInTime: '09:42 AM',
-      status: 'Late',
-      createdAt: `${todayKey}T09:42:00.000Z`,
-      updatedAt: `${todayKey}T09:42:00.000Z`,
-    },
-    {
-      id: 'att-mt004-today',
-      employeeId: 'MT004',
-      employeeName: 'Anita Verma',
-      department: 'Human Resources',
-      date: todayKey,
-      displayDate: todayDisplay,
-      checkInTime: '09:10 AM',
-      status: 'Present',
-      createdAt: `${todayKey}T09:10:00.000Z`,
-      updatedAt: `${todayKey}T09:10:00.000Z`,
-    },
-  ];
+  return [];
 }
 
-let memEmployees: Employee[] = [...INITIAL_EMPLOYEES];
-let memAttendance: AttendanceRecord[] = generateInitialAttendance();
+let memEmployees: Employee[] = [];
+let memAttendance: AttendanceRecord[] = [];
 let memSettings: OfficeSettings = { ...INITIAL_SETTINGS };
 
 function getLocalStore<T>(key: string, defaultVal: T): T {
@@ -135,12 +93,12 @@ export async function getEmployees(): Promise<Employee[]> {
   if (isFirebaseConfigured() && db) {
     try {
       const querySnapshot = await getDocs(collection(db, 'employees'));
-      if (!querySnapshot.empty) {
-        const emps: Employee[] = [];
-        querySnapshot.forEach((d) => emps.push(d.data() as Employee));
-        const clean = deduplicateEmployees(emps);
-        return clean;
-      }
+      const emps: Employee[] = [];
+      querySnapshot.forEach((d) => emps.push(d.data() as Employee));
+      const clean = deduplicateEmployees(emps);
+      setLocalStore(EMPLOYEES_STORAGE_KEY, clean);
+      memEmployees = clean;
+      return clean;
     } catch (e) {
       console.warn('Firebase getEmployees failed, using local store:', e);
     }
@@ -150,7 +108,6 @@ export async function getEmployees(): Promise<Employee[]> {
   const raw = getLocalStore<Employee[]>(EMPLOYEES_STORAGE_KEY, memEmployees);
   const clean = deduplicateEmployees(raw);
 
-  // If duplicates were pruned, update localStorage immediately
   if (clean.length !== raw.length) {
     setLocalStore(EMPLOYEES_STORAGE_KEY, clean);
   }
@@ -311,11 +268,12 @@ export async function getAllAttendance(): Promise<AttendanceRecord[]> {
   if (isFirebaseConfigured() && db) {
     try {
       const snap = await getDocs(collection(db, 'attendance'));
-      if (!snap.empty) {
-        const records: AttendanceRecord[] = [];
-        snap.forEach((d) => records.push(d.data() as AttendanceRecord));
-        return deduplicateAttendance(records);
-      }
+      const records: AttendanceRecord[] = [];
+      snap.forEach((d) => records.push(d.data() as AttendanceRecord));
+      const clean = deduplicateAttendance(records);
+      setLocalStore(ATTENDANCE_STORAGE_KEY, clean);
+      memAttendance = clean;
+      return clean;
     } catch (e) {
       console.warn('Firebase getAllAttendance failed:', e);
     }
