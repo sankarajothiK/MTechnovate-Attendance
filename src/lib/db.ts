@@ -110,6 +110,25 @@ export function deduplicateAttendance(rawList: AttendanceRecord[]): AttendanceRe
 // --- EMPLOYEE OPERATIONS ---
 
 export async function getEmployees(): Promise<Employee[]> {
+  // 1. Browser client: use high-speed Next.js server API endpoint
+  if (typeof window !== 'undefined') {
+    try {
+      const res = await fetch('/api/employees', { cache: 'no-store' });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && Array.isArray(json.employees)) {
+          const clean = deduplicateEmployees(json.employees);
+          setLocalStore(EMPLOYEES_STORAGE_KEY, clean);
+          memEmployees = clean;
+          return clean;
+        }
+      }
+    } catch (err) {
+      console.warn('API /api/employees fetch error, falling back to direct Firebase:', err);
+    }
+  }
+
+  // 2. Direct Firestore (Server-side or fallback)
   const db = getFirestoreDb();
   if (db) {
     try {
@@ -134,7 +153,7 @@ export async function getEmployees(): Promise<Employee[]> {
     }
   }
 
-  // 2. Local store fallback
+  // 3. Local store fallback
   const raw = getLocalStore<Employee[]>(EMPLOYEES_STORAGE_KEY, memEmployees);
   const clean = deduplicateEmployees(raw);
 
@@ -181,16 +200,36 @@ export async function createEmployee(
 ): Promise<{ success: boolean; employee?: Employee; error?: string }> {
   const formattedId = data.employeeId.trim().toUpperCase();
 
-  // 1. Fetch current employees once
-  const allEmployees = await getEmployees();
+  // 1. Browser client: call server API
+  if (typeof window !== 'undefined') {
+    try {
+      const res = await fetch('/api/employees', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...data, employeeId: formattedId }),
+      });
+      const json = await res.json();
+      if (json.success && json.employee) {
+        const current = getLocalStore<Employee[]>(EMPLOYEES_STORAGE_KEY, memEmployees);
+        const updated = deduplicateEmployees([...current, json.employee]);
+        setLocalStore(EMPLOYEES_STORAGE_KEY, updated);
+        memEmployees = updated;
+        return { success: true, employee: json.employee };
+      } else {
+        return { success: false, error: json.error || 'Failed to create employee' };
+      }
+    } catch (err) {
+      console.warn('API createEmployee failed, falling back to direct Firestore:', err);
+    }
+  }
 
-  // Strict check 1: Duplicate Employee ID
+  // 2. Direct Firestore (Server-side or fallback)
+  const allEmployees = await getEmployees();
   const existingId = allEmployees.find((e) => e.employeeId.toUpperCase() === formattedId);
   if (existingId) {
     return { success: false, error: `Employee ID ${formattedId} already exists in database.` };
   }
 
-  // Strict check 2: Duplicate Employee Name
   const duplicateName = allEmployees.find(
     (e) => e.name.trim().toLowerCase() === data.name.trim().toLowerCase()
   );
@@ -208,7 +247,6 @@ export async function createEmployee(
     createdAt: new Date().toISOString(),
   };
 
-  // 2. Firebase Firestore with timeout
   const db = getFirestoreDb();
   if (db) {
     try {
@@ -223,7 +261,6 @@ export async function createEmployee(
     }
   }
 
-  // 3. Update Local Cache
   const updated = deduplicateEmployees([...allEmployees, newEmployee]);
   setLocalStore(EMPLOYEES_STORAGE_KEY, updated);
   memEmployees = updated;
@@ -236,6 +273,30 @@ export async function updateEmployee(
   updates: Partial<Employee>
 ): Promise<{ success: boolean; employee?: Employee; error?: string }> {
   const cleanId = employeeId.trim().toUpperCase();
+
+  if (typeof window !== 'undefined') {
+    try {
+      const res = await fetch('/api/employees', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ employeeId: cleanId, updates }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        const all = await getEmployees();
+        const index = all.findIndex((e) => e.employeeId.toUpperCase() === cleanId);
+        if (index !== -1) {
+          all[index] = { ...all[index], ...updates };
+          setLocalStore(EMPLOYEES_STORAGE_KEY, all);
+          memEmployees = all;
+          return { success: true, employee: all[index] };
+        }
+      }
+    } catch (err) {
+      console.warn('API updateEmployee error, falling back:', err);
+    }
+  }
+
   const all = await getEmployees();
   const index = all.findIndex((e) => e.employeeId.toUpperCase() === cleanId);
   if (index === -1) {
@@ -267,6 +328,25 @@ export async function updateEmployee(
 
 export async function deleteEmployee(employeeId: string): Promise<boolean> {
   const cleanId = employeeId.trim().toUpperCase();
+
+  if (typeof window !== 'undefined') {
+    try {
+      const res = await fetch(`/api/employees?employeeId=${encodeURIComponent(cleanId)}`, {
+        method: 'DELETE',
+      });
+      const json = await res.json();
+      if (json.success) {
+        const all = await getEmployees();
+        const filtered = all.filter((e) => e.employeeId.toUpperCase() !== cleanId);
+        setLocalStore(EMPLOYEES_STORAGE_KEY, filtered);
+        memEmployees = filtered;
+        return true;
+      }
+    } catch (err) {
+      console.warn('API deleteEmployee error, falling back:', err);
+    }
+  }
+
   const all = await getEmployees();
   const filtered = all.filter((e) => e.employeeId.toUpperCase() !== cleanId);
 
@@ -312,6 +392,25 @@ export async function cleanAllDuplicates(): Promise<{ employeeCount: number; rem
 // --- ATTENDANCE MANAGEMENT ---
 
 export async function getAllAttendance(): Promise<AttendanceRecord[]> {
+  // 1. Browser client: call server API
+  if (typeof window !== 'undefined') {
+    try {
+      const res = await fetch('/api/attendance', { cache: 'no-store' });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && Array.isArray(json.attendance)) {
+          const clean = deduplicateAttendance(json.attendance);
+          setLocalStore(ATTENDANCE_STORAGE_KEY, clean);
+          memAttendance = clean;
+          return clean;
+        }
+      }
+    } catch (err) {
+      console.warn('API /api/attendance fetch error, falling back:', err);
+    }
+  }
+
+  // 2. Direct Firestore fallback
   const db = getFirestoreDb();
   if (db) {
     try {
@@ -363,6 +462,22 @@ export async function getTodayRecordForEmployee(
 // --- OFFICE SETTINGS ---
 
 export async function getOfficeSettings(): Promise<OfficeSettings> {
+  if (typeof window !== 'undefined') {
+    try {
+      const res = await fetch('/api/settings', { cache: 'no-store' });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.settings) {
+          setLocalStore(SETTINGS_STORAGE_KEY, json.settings);
+          memSettings = json.settings;
+          return json.settings;
+        }
+      }
+    } catch (err) {
+      console.warn('API /api/settings error, falling back:', err);
+    }
+  }
+
   const db = getFirestoreDb();
   if (db) {
     try {
@@ -387,6 +502,24 @@ export async function getOfficeSettings(): Promise<OfficeSettings> {
 export async function updateOfficeSettings(updates: Partial<OfficeSettings>): Promise<OfficeSettings> {
   const current = await getOfficeSettings();
   const updated = { ...current, ...updates };
+
+  if (typeof window !== 'undefined') {
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updated),
+      });
+      const json = await res.json();
+      if (json.success && json.settings) {
+        setLocalStore(SETTINGS_STORAGE_KEY, json.settings);
+        memSettings = json.settings;
+        return json.settings;
+      }
+    } catch (err) {
+      console.warn('API updateOfficeSettings error, falling back:', err);
+    }
+  }
 
   const db = getFirestoreDb();
   if (db) {
@@ -468,7 +601,30 @@ export async function verifyAndMarkAttendance(
 ): Promise<VerificationResult> {
   const cleanId = employeeIdInput.trim().toUpperCase();
 
-  // 1. Search employee in DB
+  // 1. Browser client: call server API endpoint
+  if (typeof window !== 'undefined') {
+    try {
+      const res = await fetch('/api/attendance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ employeeId: cleanId, userCoords }),
+      });
+      const json = await res.json();
+      if (json) {
+        if (json.record) {
+          const allRecords = getLocalStore<AttendanceRecord[]>(ATTENDANCE_STORAGE_KEY, memAttendance);
+          const updated = deduplicateAttendance([json.record, ...allRecords]);
+          setLocalStore(ATTENDANCE_STORAGE_KEY, updated);
+          memAttendance = updated;
+        }
+        return json as VerificationResult;
+      }
+    } catch (err) {
+      console.warn('API verifyAndMarkAttendance error, falling back to direct:', err);
+    }
+  }
+
+  // 2. Direct Firestore verification fallback
   const employee = await getEmployeeByEmployeeId(cleanId);
 
   if (!employee) {
@@ -479,7 +635,6 @@ export async function verifyAndMarkAttendance(
     };
   }
 
-  // 2. Check if employee is inactive
   if (employee.status !== 'Active') {
     return {
       success: false,
@@ -489,7 +644,6 @@ export async function verifyAndMarkAttendance(
     };
   }
 
-  // 3. Check Geofencing if enabled
   const settings = await getOfficeSettings();
   let locationData: AttendanceRecord['location'] | undefined;
 
@@ -527,13 +681,12 @@ export async function verifyAndMarkAttendance(
     }
   }
 
-  // 4. Check today's existing attendance
   const todayKey = getCurrentDateKey();
   const displayDate = formatDisplayDate(todayKey);
   const currentTime = formatTime12h();
   const existingRecord = await getTodayRecordForEmployee(employee.employeeId, todayKey);
 
-  // CASE A: Not checked in yet today -> MARK CHECK-IN
+  // CASE A: Check-In
   if (!existingRecord) {
     const isLate = isLateCheckIn(currentTime, settings.workStartTime);
     const newRecord: AttendanceRecord = {
@@ -545,17 +698,22 @@ export async function verifyAndMarkAttendance(
       displayDate,
       checkInTime: currentTime,
       status: isLate ? 'Late' : 'Present',
-      location: locationData,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
+    if (locationData) {
+      newRecord.location = locationData;
+    }
 
-    // Save to Firebase
     const db = getFirestoreDb();
     if (db) {
       try {
+        const firestoreData: Record<string, unknown> = { ...newRecord };
+        Object.keys(firestoreData).forEach((k) => {
+          if (firestoreData[k] === undefined) delete firestoreData[k];
+        });
         await runWithTimeout(
-          setDoc(doc(db, 'attendance', newRecord.id), newRecord),
+          setDoc(doc(db, 'attendance', newRecord.id), firestoreData),
           6000,
           'setDoc checkIn'
         );
@@ -564,7 +722,6 @@ export async function verifyAndMarkAttendance(
       }
     }
 
-    // Save to Local Store
     const allRecords = getLocalStore<AttendanceRecord[]>(ATTENDANCE_STORAGE_KEY, memAttendance);
     const updated = deduplicateAttendance([newRecord, ...allRecords]);
     setLocalStore(ATTENDANCE_STORAGE_KEY, updated);
@@ -579,23 +736,28 @@ export async function verifyAndMarkAttendance(
     };
   }
 
-  // CASE B: Checked in today, but not checked out -> MARK CHECK-OUT
+  // CASE B: Check-Out
   if (existingRecord.checkInTime && !existingRecord.checkOutTime) {
     const totalHours = calculateWorkingHours(existingRecord.checkInTime, currentTime);
     const updatedRecord: AttendanceRecord = {
       ...existingRecord,
       checkOutTime: currentTime,
       totalHours,
-      location: locationData || existingRecord.location,
       updatedAt: new Date().toISOString(),
     };
+    if (locationData || existingRecord.location) {
+      updatedRecord.location = locationData || existingRecord.location;
+    }
 
-    // Update Firebase
     const db = getFirestoreDb();
     if (db) {
       try {
+        const firestoreData: Record<string, unknown> = { ...updatedRecord };
+        Object.keys(firestoreData).forEach((k) => {
+          if (firestoreData[k] === undefined) delete firestoreData[k];
+        });
         await runWithTimeout(
-          setDoc(doc(db, 'attendance', updatedRecord.id), updatedRecord),
+          setDoc(doc(db, 'attendance', updatedRecord.id), firestoreData),
           6000,
           'setDoc checkOut'
         );
@@ -604,7 +766,6 @@ export async function verifyAndMarkAttendance(
       }
     }
 
-    // Update Local Store
     const allRecords = getLocalStore<AttendanceRecord[]>(ATTENDANCE_STORAGE_KEY, memAttendance);
     const updated = allRecords.map((r) => (r.id === updatedRecord.id ? updatedRecord : r));
     setLocalStore(ATTENDANCE_STORAGE_KEY, updated);
@@ -619,7 +780,7 @@ export async function verifyAndMarkAttendance(
     };
   }
 
-  // CASE C: Already checked in and checked out today
+  // CASE C: Already Completed
   return {
     success: false,
     type: 'ALREADY_COMPLETED',
@@ -628,3 +789,5 @@ export async function verifyAndMarkAttendance(
     record: existingRecord,
   };
 }
+
+export { isFirebaseConfigured };
