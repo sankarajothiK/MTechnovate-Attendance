@@ -183,10 +183,12 @@ export default function AdminDashboard() {
             <button
               type="button"
               onClick={() => setIsFirebaseModalOpen(true)}
-              className="flex items-center justify-center gap-2 px-3 sm:px-3.5 py-2.5 bg-white hover:bg-slate-50 text-blue-700 border border-blue-200 rounded-xl text-xs font-bold shadow-2xs transition-all active:scale-95"
+              className="flex items-center justify-center gap-1.5 px-3 sm:px-3.5 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold shadow-2xs transition-all active:scale-95"
+              title="View Cloud Database Status & Sync"
             >
-              <Database className="w-3.5 h-3.5 text-blue-600" />
-              <span className="truncate">Firebase</span>
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+              <Database className="w-3.5 h-3.5 text-emerald-600" />
+              <span className="truncate">Cloud Sync</span>
             </button>
 
             <button

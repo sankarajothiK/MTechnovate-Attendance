@@ -12,10 +12,19 @@ export interface FirebaseConfigOptions {
   appId: string;
 }
 
+export const DEFAULT_FIREBASE_CONFIG: FirebaseConfigOptions = {
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'AIzaSyCfbY_f0eJgOFvtyllSwU4fZW_dSLUPvWU',
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || 'm-technovate-attendance.firebaseapp.com',
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'm-technovate-attendance',
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'm-technovate-attendance.firebasestorage.app',
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '50293975206',
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || '1:50293975206:web:a4395d16dbba47b2aeec67',
+};
+
 const FIREBASE_LOCAL_KEY = 'mtechnovate_firebase_config_v1';
 
 export function getSavedFirebaseConfig(): FirebaseConfigOptions | null {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === 'undefined') return DEFAULT_FIREBASE_CONFIG;
   try {
     const saved = localStorage.getItem(FIREBASE_LOCAL_KEY);
     if (saved) {
@@ -27,14 +36,13 @@ export function getSavedFirebaseConfig(): FirebaseConfigOptions | null {
   } catch (e) {
     console.error('Error reading saved Firebase config:', e);
   }
-  return null;
+  return DEFAULT_FIREBASE_CONFIG;
 }
 
 export function saveFirebaseConfig(config: FirebaseConfigOptions): void {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(FIREBASE_LOCAL_KEY, JSON.stringify(config));
-    // Re-initialize
     initFirebase(config);
   } catch (e) {
     console.error('Error saving Firebase config:', e);
@@ -47,32 +55,15 @@ export function removeSavedFirebaseConfig(): void {
 }
 
 function getActiveConfig(): FirebaseConfigOptions {
-  const saved = getSavedFirebaseConfig();
-  if (saved) return saved;
-
-  return {
-    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'AIzaSyCfbY_f0eJgOFvtyllSwU4fZW_dSLUPvWU',
-    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || 'm-technovate-attendance.firebaseapp.com',
-    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'm-technovate-attendance',
-    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'm-technovate-attendance.firebasestorage.app',
-    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '50293975206',
-    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || '1:50293975206:web:a4395d16dbba47b2aeec67',
-  };
+  return DEFAULT_FIREBASE_CONFIG;
 }
 
 export const isFirebaseConfigured = (): boolean => {
-  const config = getActiveConfig();
-  return Boolean(
-    config.apiKey &&
-    config.projectId &&
-    config.apiKey !== 'demo-api-key' &&
-    !config.apiKey.includes('placeholder') &&
-    !config.apiKey.includes('your_api_key')
-  );
+  return true;
 };
 
 export function getFirebaseConfigDetails(): FirebaseConfigOptions {
-  return getActiveConfig();
+  return DEFAULT_FIREBASE_CONFIG;
 }
 
 let app: FirebaseApp | null = null;

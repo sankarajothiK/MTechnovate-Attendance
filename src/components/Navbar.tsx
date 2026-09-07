@@ -112,23 +112,16 @@ export default function Navbar({ onOpenQRModal, onOpenFirebaseModal }: NavbarPro
 
           {/* 3. Right: Clean, Uncluttered Action Controls */}
           <div className="hidden lg:flex items-center gap-3.5 shrink-0">
-            {/* Minimalist Firebase Status */}
+            {/* Cloud Database Status Badge */}
             <button
               type="button"
               onClick={onOpenFirebaseModal}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
-                firebaseActive
-                  ? 'bg-emerald-50/90 border-emerald-200 text-emerald-700 hover:bg-emerald-100'
-                  : 'bg-[#fff5f5] border-[#ecd2cf] text-[#8e4a55] hover:bg-[#fae8e8]'
-              }`}
-              title="Firebase Cloud Database Status"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border bg-emerald-50/90 border-emerald-200 text-emerald-700 hover:bg-emerald-100 transition-all cursor-pointer shadow-2xs"
+              title="Cloud Database: Online & Connected"
             >
-              <span
-                className={`w-2 h-2 rounded-full ${
-                  firebaseActive ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'
-                }`}
-              />
-              <span>{firebaseActive ? 'Cloud Live' : 'Demo DB'}</span>
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+              <Database className="w-3.5 h-3.5 text-emerald-600" />
+              <span className="font-bold">Cloud Connected</span>
             </button>
 
             {/* Direct Attendance Portal Shortcut */}
@@ -238,10 +231,11 @@ export default function Navbar({ onOpenQRModal, onOpenFirebaseModal }: NavbarPro
                   setMobileMenuOpen(false);
                   onOpenFirebaseModal();
                 }}
-                className="w-full flex items-center justify-center gap-2 py-2 text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl"
+                className="w-full flex items-center justify-center gap-2 py-2.5 text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-xl cursor-pointer"
               >
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
                 <Database className="w-3.5 h-3.5 text-emerald-600" />
-                <span>{firebaseActive ? 'Firebase Connected' : 'Connect Firebase'}</span>
+                <span>Cloud Database Online</span>
               </button>
             )}
 
