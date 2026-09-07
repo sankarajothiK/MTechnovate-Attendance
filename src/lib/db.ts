@@ -1,5 +1,5 @@
 import { Employee, AttendanceRecord, OfficeSettings, VerificationResult } from '@/types';
-import { INITIAL_EMPLOYEES, INITIAL_SETTINGS } from './mockData';
+import { INITIAL_SETTINGS } from './mockData';
 import {
   getCurrentDateKey,
   formatDisplayDate,
@@ -8,7 +8,7 @@ import {
   isLateCheckIn,
   calculateDistanceMeters,
 } from './dateUtils';
-import { db, isFirebaseConfigured } from './firebase';
+import { getFirestoreDb, isFirebaseConfigured } from './firebase';
 import {
   collection,
   getDocs,
@@ -17,20 +17,42 @@ import {
   updateDoc,
   deleteDoc,
   getDoc,
-  writeBatch,
 } from 'firebase/firestore';
 
 const EMPLOYEES_STORAGE_KEY = 'mtechnovate_employees_v3';
 const ATTENDANCE_STORAGE_KEY = 'mtechnovate_attendance_v3';
 const SETTINGS_STORAGE_KEY = 'mtechnovate_settings_v3';
 
-function generateInitialAttendance(): AttendanceRecord[] {
-  return [];
-}
-
 let memEmployees: Employee[] = [];
 let memAttendance: AttendanceRecord[] = [];
 let memSettings: OfficeSettings = { ...INITIAL_SETTINGS };
+
+const FIRESTORE_TIMEOUT_MS = 6000;
+
+/**
+ * Executes a promise with an automatic timeout guard to prevent UI hanging
+ */
+async function runWithTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs = FIRESTORE_TIMEOUT_MS,
+  label = 'operation'
+): Promise<T> {
+  let timer: ReturnType<typeof setTimeout>;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      reject(new Error(`Firebase ${label} timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+  });
+
+  try {
+    const result = await Promise.race([promise, timeoutPromise]);
+    clearTimeout(timer!);
+    return result;
+  } catch (err) {
+    clearTimeout(timer!);
+    throw err;
+  }
+}
 
 function getLocalStore<T>(key: string, defaultVal: T): T {
   if (typeof window === 'undefined') return defaultVal;
@@ -65,14 +87,13 @@ export function deduplicateEmployees(rawList: Employee[]): Employee[] {
   for (const emp of rawList) {
     if (!emp || !emp.employeeId) continue;
     const key = emp.employeeId.trim().toUpperCase();
-    // Later occurrences overwrite earlier ones (or preserve valid data)
     map.set(key, { ...emp, employeeId: key });
   }
   return Array.from(map.values()).sort((a, b) => a.employeeId.localeCompare(b.employeeId));
 }
 
 /**
- * Deduplicates attendance records by id or (employeeId + date)
+ * Deduplicates attendance records by (employeeId + date)
  */
 export function deduplicateAttendance(rawList: AttendanceRecord[]): AttendanceRecord[] {
   const map = new Map<string, AttendanceRecord>();
@@ -89,18 +110,27 @@ export function deduplicateAttendance(rawList: AttendanceRecord[]): AttendanceRe
 // --- EMPLOYEE OPERATIONS ---
 
 export async function getEmployees(): Promise<Employee[]> {
-  // 1. If Firebase Firestore is configured
-  if (isFirebaseConfigured() && db) {
+  const db = getFirestoreDb();
+  if (db) {
     try {
-      const querySnapshot = await getDocs(collection(db, 'employees'));
+      const querySnapshot = await runWithTimeout(
+        getDocs(collection(db, 'employees')),
+        6000,
+        'getEmployees'
+      );
       const emps: Employee[] = [];
-      querySnapshot.forEach((d) => emps.push(d.data() as Employee));
+      querySnapshot.forEach((d) => {
+        const data = d.data() as Employee;
+        if (data && data.employeeId) {
+          emps.push(data);
+        }
+      });
       const clean = deduplicateEmployees(emps);
       setLocalStore(EMPLOYEES_STORAGE_KEY, clean);
       memEmployees = clean;
       return clean;
     } catch (e) {
-      console.warn('Firebase getEmployees failed, using local store:', e);
+      console.warn('Firebase getEmployees failed or timed out, using local store fallback:', e);
     }
   }
 
@@ -151,14 +181,16 @@ export async function createEmployee(
 ): Promise<{ success: boolean; employee?: Employee; error?: string }> {
   const formattedId = data.employeeId.trim().toUpperCase();
 
+  // 1. Fetch current employees once
+  const allEmployees = await getEmployees();
+
   // Strict check 1: Duplicate Employee ID
-  const existingId = await getEmployeeByEmployeeId(formattedId);
+  const existingId = allEmployees.find((e) => e.employeeId.toUpperCase() === formattedId);
   if (existingId) {
     return { success: false, error: `Employee ID ${formattedId} already exists in database.` };
   }
 
   // Strict check 2: Duplicate Employee Name
-  const allEmployees = await getEmployees();
   const duplicateName = allEmployees.find(
     (e) => e.name.trim().toLowerCase() === data.name.trim().toLowerCase()
   );
@@ -176,18 +208,23 @@ export async function createEmployee(
     createdAt: new Date().toISOString(),
   };
 
-  // 1. Firebase Firestore
-  if (isFirebaseConfigured() && db) {
+  // 2. Firebase Firestore with timeout
+  const db = getFirestoreDb();
+  if (db) {
     try {
-      await setDoc(doc(db, 'employees', newEmployee.employeeId), newEmployee);
+      await runWithTimeout(
+        setDoc(doc(db, 'employees', newEmployee.employeeId), newEmployee),
+        6000,
+        'setDoc employee'
+      );
+      console.log('Firebase: Successfully created employee', newEmployee.employeeId);
     } catch (e) {
-      console.warn('Firebase setDoc failed for employee:', e);
+      console.warn('Firebase setDoc failed or timed out for employee:', e);
     }
   }
 
-  // 2. Local Store
-  const current = await getEmployees();
-  const updated = deduplicateEmployees([...current, newEmployee]);
+  // 3. Update Local Cache
+  const updated = deduplicateEmployees([...allEmployees, newEmployee]);
   setLocalStore(EMPLOYEES_STORAGE_KEY, updated);
   memEmployees = updated;
 
@@ -208,9 +245,14 @@ export async function updateEmployee(
   const updatedEmployee = { ...all[index], ...updates };
   all[index] = updatedEmployee;
 
-  if (isFirebaseConfigured() && db) {
+  const db = getFirestoreDb();
+  if (db) {
     try {
-      await updateDoc(doc(db, 'employees', cleanId), updates);
+      await runWithTimeout(
+        updateDoc(doc(db, 'employees', cleanId), updates),
+        6000,
+        'updateDoc employee'
+      );
     } catch (e) {
       console.warn('Firebase updateDoc failed:', e);
     }
@@ -228,9 +270,14 @@ export async function deleteEmployee(employeeId: string): Promise<boolean> {
   const all = await getEmployees();
   const filtered = all.filter((e) => e.employeeId.toUpperCase() !== cleanId);
 
-  if (isFirebaseConfigured() && db) {
+  const db = getFirestoreDb();
+  if (db) {
     try {
-      await deleteDoc(doc(db, 'employees', cleanId));
+      await runWithTimeout(
+        deleteDoc(doc(db, 'employees', cleanId)),
+        6000,
+        'deleteDoc employee'
+      );
     } catch (e) {
       console.warn('Firebase deleteDoc failed:', e);
     }
@@ -265,17 +312,27 @@ export async function cleanAllDuplicates(): Promise<{ employeeCount: number; rem
 // --- ATTENDANCE MANAGEMENT ---
 
 export async function getAllAttendance(): Promise<AttendanceRecord[]> {
-  if (isFirebaseConfigured() && db) {
+  const db = getFirestoreDb();
+  if (db) {
     try {
-      const snap = await getDocs(collection(db, 'attendance'));
+      const snap = await runWithTimeout(
+        getDocs(collection(db, 'attendance')),
+        6000,
+        'getAllAttendance'
+      );
       const records: AttendanceRecord[] = [];
-      snap.forEach((d) => records.push(d.data() as AttendanceRecord));
+      snap.forEach((d) => {
+        const data = d.data() as AttendanceRecord;
+        if (data && data.employeeId && data.date) {
+          records.push(data);
+        }
+      });
       const clean = deduplicateAttendance(records);
       setLocalStore(ATTENDANCE_STORAGE_KEY, clean);
       memAttendance = clean;
       return clean;
     } catch (e) {
-      console.warn('Firebase getAllAttendance failed:', e);
+      console.warn('Firebase getAllAttendance failed or timed out:', e);
     }
   }
 
@@ -306,14 +363,22 @@ export async function getTodayRecordForEmployee(
 // --- OFFICE SETTINGS ---
 
 export async function getOfficeSettings(): Promise<OfficeSettings> {
-  if (isFirebaseConfigured() && db) {
+  const db = getFirestoreDb();
+  if (db) {
     try {
-      const snap = await getDoc(doc(db, 'settings', 'office'));
+      const snap = await runWithTimeout(
+        getDoc(doc(db, 'settings', 'office')),
+        6000,
+        'getOfficeSettings'
+      );
       if (snap.exists()) {
-        return snap.data() as OfficeSettings;
+        const data = snap.data() as OfficeSettings;
+        setLocalStore(SETTINGS_STORAGE_KEY, data);
+        memSettings = data;
+        return data;
       }
     } catch (e) {
-      console.warn('Firebase getOfficeSettings failed:', e);
+      console.warn('Firebase getOfficeSettings failed or timed out:', e);
     }
   }
   return getLocalStore<OfficeSettings>(SETTINGS_STORAGE_KEY, memSettings);
@@ -323,9 +388,14 @@ export async function updateOfficeSettings(updates: Partial<OfficeSettings>): Pr
   const current = await getOfficeSettings();
   const updated = { ...current, ...updates };
 
-  if (isFirebaseConfigured() && db) {
+  const db = getFirestoreDb();
+  if (db) {
     try {
-      await setDoc(doc(db, 'settings', 'office'), updated);
+      await runWithTimeout(
+        setDoc(doc(db, 'settings', 'office'), updated),
+        6000,
+        'setDoc settings'
+      );
     } catch (e) {
       console.warn('Firebase setDoc failed for settings:', e);
     }
@@ -339,7 +409,8 @@ export async function updateOfficeSettings(updates: Partial<OfficeSettings>): Pr
 // --- SYNC TO FIREBASE (1-CLICK SYNC ALL DATA) ---
 
 export async function syncAllToFirebase(): Promise<{ success: boolean; employeesSynced: number; attendanceSynced: number; error?: string }> {
-  if (!isFirebaseConfigured() || !db) {
+  const db = getFirestoreDb();
+  if (!db) {
     return { success: false, employeesSynced: 0, attendanceSynced: 0, error: 'Firebase is not connected or configured.' };
   }
 
@@ -350,16 +421,28 @@ export async function syncAllToFirebase(): Promise<{ success: boolean; employees
 
     // 1. Sync Employees
     for (const emp of emps) {
-      await setDoc(doc(db, 'employees', emp.employeeId), emp);
+      await runWithTimeout(
+        setDoc(doc(db, 'employees', emp.employeeId), emp),
+        6000,
+        `sync emp ${emp.employeeId}`
+      );
     }
 
     // 2. Sync Attendance
     for (const att of atts) {
-      await setDoc(doc(db, 'attendance', att.id), att);
+      await runWithTimeout(
+        setDoc(doc(db, 'attendance', att.id), att),
+        6000,
+        `sync att ${att.id}`
+      );
     }
 
     // 3. Sync Settings
-    await setDoc(doc(db, 'settings', 'office'), setts);
+    await runWithTimeout(
+      setDoc(doc(db, 'settings', 'office'), setts),
+      6000,
+      'sync settings'
+    );
 
     return {
       success: true,
@@ -468,9 +551,14 @@ export async function verifyAndMarkAttendance(
     };
 
     // Save to Firebase
-    if (isFirebaseConfigured() && db) {
+    const db = getFirestoreDb();
+    if (db) {
       try {
-        await setDoc(doc(db, 'attendance', newRecord.id), newRecord);
+        await runWithTimeout(
+          setDoc(doc(db, 'attendance', newRecord.id), newRecord),
+          6000,
+          'setDoc checkIn'
+        );
       } catch (e) {
         console.warn('Firebase setDoc attendance failed:', e);
       }
@@ -503,9 +591,14 @@ export async function verifyAndMarkAttendance(
     };
 
     // Update Firebase
-    if (isFirebaseConfigured() && db) {
+    const db = getFirestoreDb();
+    if (db) {
       try {
-        await setDoc(doc(db, 'attendance', updatedRecord.id), updatedRecord);
+        await runWithTimeout(
+          setDoc(doc(db, 'attendance', updatedRecord.id), updatedRecord),
+          6000,
+          'setDoc checkOut'
+        );
       } catch (e) {
         console.warn('Firebase update attendance checkout failed:', e);
       }

@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getFirestore, Firestore } from 'firebase/firestore';
+import { initializeFirestore, getFirestore, Firestore } from 'firebase/firestore';
 import { getAuth, Auth } from 'firebase/auth';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
 
@@ -84,9 +84,29 @@ export function initFirebase(customConfig?: FirebaseConfigOptions): { app: Fireb
     } else {
       app = initializeApp(config);
     }
-    db = getFirestore(app);
-    auth = getAuth(app);
-    storage = getStorage(app);
+
+    if (!db) {
+      try {
+        db = initializeFirestore(app, {
+          experimentalAutoDetectLongPolling: true,
+        });
+      } catch {
+        db = getFirestore(app);
+      }
+    }
+
+    try {
+      if (!auth) auth = getAuth(app);
+    } catch {
+      // ignore
+    }
+
+    try {
+      if (!storage) storage = getStorage(app);
+    } catch {
+      // ignore
+    }
+
     return { app, db };
   } catch (error: unknown) {
     console.warn('Firebase initialization error:', error);
@@ -94,11 +114,19 @@ export function initFirebase(customConfig?: FirebaseConfigOptions): { app: Fireb
   }
 }
 
-// Initial boot initialization
-if (typeof window !== 'undefined' || process.env.NEXT_PUBLIC_FIREBASE_API_KEY) {
-  if (isFirebaseConfigured()) {
-    initFirebase();
+// Initial eager boot initialization
+try {
+  initFirebase();
+} catch (e) {
+  console.warn('Initial Firebase init warning:', e);
+}
+
+export function getFirestoreDb(): Firestore | null {
+  if (!db) {
+    const res = initFirebase();
+    return res.db;
   }
+  return db;
 }
 
 export { app, db, auth, storage };
