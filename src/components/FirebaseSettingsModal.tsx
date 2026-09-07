@@ -133,14 +133,14 @@ export default function FirebaseSettingsModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
-      <div className="relative w-full max-w-xl bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden my-8">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-2 sm:p-4 overflow-y-auto">
+      <div className="relative w-full max-w-xl bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-100 overflow-hidden my-auto sm:my-8 flex flex-col max-h-[92vh]">
+        <div className="shrink-0 flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-100 bg-slate-50">
           <div className="flex items-center gap-2">
-            <Database className="w-5 h-5 text-blue-600" />
+            <Database className="w-5 h-5 text-blue-600 shrink-0" />
             <div>
-              <h3 className="text-base font-bold text-slate-900">Firebase Firestore Connection</h3>
-              <p className="text-[11px] text-slate-500">Cloud Data Storage for M Technovate Solutions</p>
+              <h3 className="text-sm sm:text-base font-bold text-slate-900">Firebase Firestore Connection</h3>
+              <p className="text-[10px] sm:text-[11px] text-slate-500">Cloud Data Storage for M Technovate Solutions</p>
             </div>
           </div>
           <button
@@ -151,10 +151,10 @@ export default function FirebaseSettingsModal({
           </button>
         </div>
 
-        <div className="p-6 space-y-4 text-xs">
+        <div className="p-4 sm:p-6 space-y-4 text-xs overflow-y-auto">
           {/* Status Alert Banner */}
           <div
-            className={`p-4 rounded-xl border flex items-start justify-between gap-3 ${
+            className={`p-3.5 sm:p-4 rounded-xl border flex flex-col sm:flex-row items-start justify-between gap-3 ${
               isConfigured
                 ? 'bg-emerald-50/90 border-emerald-200 text-emerald-900'
                 : 'bg-amber-50/90 border-amber-200 text-amber-900'
@@ -202,7 +202,7 @@ export default function FirebaseSettingsModal({
           {/* Sync Button when Connected */}
           {isConfigured && (
             <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                 <div>
                   <h4 className="font-bold text-slate-800">Sync Local Data to Firebase</h4>
                   <p className="text-[11px] text-slate-500">
@@ -213,7 +213,7 @@ export default function FirebaseSettingsModal({
                   type="button"
                   disabled={syncing}
                   onClick={handleSyncData}
-                  className="flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 active:scale-95 disabled:opacity-50 text-white rounded-lg font-bold shadow-xs transition-all"
+                  className="flex items-center justify-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 active:scale-95 disabled:opacity-50 text-white rounded-lg font-bold shadow-xs transition-all shrink-0"
                 >
                   <UploadCloud className="w-4 h-4" />
                   <span>{syncing ? 'Syncing...' : 'Sync Now'}</span>
@@ -350,25 +350,25 @@ export default function FirebaseSettingsModal({
           )}
 
           {/* Action Buttons */}
-          <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-            <p className="text-[10px] text-slate-400">
+          <div className="shrink-0 pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <p className="text-[10px] text-slate-400 order-2 sm:order-1 text-center sm:text-left">
               Settings persist across browser sessions.
             </p>
-            <div className="flex gap-2">
+            <div className="flex gap-2 w-full sm:w-auto order-1 sm:order-2">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold"
+                className="flex-1 sm:flex-initial px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-center"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleSaveConfig}
-                className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-xs active:scale-95"
+                className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-xs active:scale-95 text-center whitespace-nowrap"
               >
                 <Save className="w-3.5 h-3.5" />
-                <span>Save & Connect Firebase</span>
+                <span>Save & Connect</span>
               </button>
             </div>
           </div>

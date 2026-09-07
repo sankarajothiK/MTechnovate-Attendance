@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import MTechnoLogo from '@/components/MTechnoLogo';
-import { Shield, Lock, Mail, ArrowRight, AlertCircle, Sparkles } from 'lucide-react';
-import { loginAdmin, getStoredAdmin, DEFAULT_ADMIN } from '@/lib/auth';
+import { Lock, Mail, ArrowRight, AlertCircle } from 'lucide-react';
+import { loginAdmin, getStoredAdmin } from '@/lib/auth';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -33,12 +33,6 @@ export default function LoginPage() {
         setLoading(false);
       }
     }, 400);
-  };
-
-  const handleFillDemo = () => {
-    setEmail(DEFAULT_ADMIN.email);
-    setPassword(DEFAULT_ADMIN.password);
-    setError('');
   };
 
   return (
@@ -114,25 +108,7 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div className="mt-6 pt-5 border-t border-slate-100">
-          <div className="bg-blue-50/70 border border-blue-100 rounded-xl p-3 flex items-center justify-between">
-            <div className="text-[11px] text-blue-900">
-              <p className="font-bold flex items-center gap-1 text-blue-700">
-                <Sparkles className="w-3.5 h-3.5 text-blue-600" /> Default Credentials:
-              </p>
-              <p className="text-slate-600 font-mono mt-0.5">admin@mtechno.com / admin123</p>
-            </div>
-            <button
-              type="button"
-              onClick={handleFillDemo}
-              className="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold rounded-lg transition-colors shadow-2xs"
-            >
-              Fill Demo
-            </button>
-          </div>
-        </div>
-
-        <div className="mt-6 text-center">
+        <div className="mt-6 pt-5 border-t border-slate-100 text-center">
           <a
             href="/attendance"
             className="text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline"

@@ -153,11 +153,11 @@ export default function AttendanceHistoryPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
             <button
               type="button"
               onClick={loadData}
-              className="p-2.5 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-blue-600 shadow-2xs transition-colors"
+              className="p-2.5 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-blue-600 shadow-2xs transition-colors shrink-0"
               title="Refresh Data"
             >
               <RefreshCw className="w-4 h-4" />
@@ -166,7 +166,7 @@ export default function AttendanceHistoryPage() {
             <button
               type="button"
               onClick={handleExportCSV}
-              className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors active:scale-95"
+              className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors active:scale-95 whitespace-nowrap"
             >
               <Download className="w-4 h-4" />
               <span>Export CSV / Excel</span>
@@ -255,11 +255,11 @@ export default function AttendanceHistoryPage() {
           </div>
 
           {/* Quick Date Chips */}
-          <div className="flex items-center gap-2 pt-2 border-t border-slate-100 text-xs">
-            <span className="text-[11px] font-semibold text-slate-400">Quick Select:</span>
+          <div className="flex items-center gap-2 pt-2 border-t border-slate-100 text-xs overflow-x-auto pb-1">
+            <span className="text-[11px] font-semibold text-slate-400 shrink-0">Quick Select:</span>
             <button
               onClick={() => setSelectedDate(getCurrentDateKey())}
-              className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors ${
+              className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors shrink-0 ${
                 selectedDate === getCurrentDateKey()
                   ? 'bg-blue-600 text-white'
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -269,7 +269,7 @@ export default function AttendanceHistoryPage() {
             </button>
             <button
               onClick={() => setSelectedDate('')}
-              className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors ${
+              className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors shrink-0 ${
                 selectedDate === ''
                   ? 'bg-blue-600 text-white'
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -280,10 +280,72 @@ export default function AttendanceHistoryPage() {
           </div>
         </div>
 
-        {/* Attendance Records Table */}
+        {/* Attendance Records Section */}
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+          {/* 1. Mobile Cards View (Screen < sm) */}
+          <div className="sm:hidden">
+            {loading ? (
+              <div className="py-12 text-center text-slate-400 text-xs">
+                Loading attendance records...
+              </div>
+            ) : filteredRecords.length === 0 ? (
+              <div className="py-12 text-center text-slate-400 text-xs">
+                No attendance records found matching filters.
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100">
+                {filteredRecords.map((rec) => (
+                  <div key={rec.id} className="p-4 space-y-2.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <span className="font-mono font-bold text-[11px] px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-md">
+                            {rec.employeeId}
+                          </span>
+                          <span className="text-[10px] text-slate-400">{rec.displayDate}</span>
+                        </div>
+                        <h4 className="font-bold text-slate-900 text-sm">{rec.employeeName}</h4>
+                        <p className="text-[11px] text-slate-500">{rec.department}</p>
+                      </div>
+
+                      <span
+                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${
+                          rec.status === 'Present'
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                            : rec.status === 'Late'
+                            ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                            : 'bg-slate-100 text-slate-700'
+                        }`}
+                      >
+                        {rec.checkOutTime ? 'Checked Out' : rec.status}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-1.5 bg-slate-50 p-2.5 rounded-xl text-center text-xs border border-slate-100">
+                      <div>
+                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">In</p>
+                        <p className="font-mono font-bold text-emerald-600 mt-0.5">{rec.checkInTime}</p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Out</p>
+                        <p className="font-mono font-bold text-slate-700 mt-0.5">
+                          {rec.checkOutTime || <span className="text-slate-400 font-normal italic">Active</span>}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Duration</p>
+                        <p className="font-mono font-bold text-blue-600 mt-0.5">{rec.totalHours || '—'}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* 2. Desktop Table View (Screen >= sm) */}
+          <div className="hidden sm:block overflow-x-auto">
+            <table className="w-full text-left text-xs min-w-[700px]">
               <thead className="bg-slate-50/80 text-slate-600 font-bold uppercase tracking-wider text-[10px] border-b border-slate-100">
                 <tr>
                   <th className="py-3.5 px-4 sm:px-6">Date</th>

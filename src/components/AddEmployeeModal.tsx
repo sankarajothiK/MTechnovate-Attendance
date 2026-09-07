@@ -160,13 +160,13 @@ export default function AddEmployeeModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
-      <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden my-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-2 sm:p-4 overflow-y-auto">
+      <div className="relative w-full max-w-2xl bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-100 overflow-hidden my-auto sm:my-8 flex flex-col max-h-[92vh]">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50">
+        <div className="shrink-0 flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-100 bg-slate-50">
           <div>
-            <h3 className="text-lg font-bold text-slate-900">Add New Employee</h3>
-            <p className="text-xs text-slate-500">
+            <h3 className="text-base sm:text-lg font-bold text-slate-900">Add New Employee</h3>
+            <p className="text-[11px] sm:text-xs text-slate-500">
               Register employee with auto-generated ID and photo verification
             </p>
           </div>
@@ -180,13 +180,13 @@ export default function AddEmployeeModal({
 
         {/* Error Alert */}
         {error && (
-          <div className="mx-6 mt-4 p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2.5 text-xs text-rose-700 font-medium">
+          <div className="shrink-0 mx-4 sm:mx-6 mt-3 p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2.5 text-xs text-rose-700 font-medium">
             <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
             <span>{error}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 sm:space-y-5 overflow-y-auto">
           {/* Top Row: Auto-Generated Employee ID & Status */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -305,7 +305,7 @@ export default function AddEmployeeModal({
                   <p className="text-[11px] text-slate-500 mb-1">
                     Or select a corporate sample headshot:
                   </p>
-                  <div className="flex items-center gap-2 justify-center sm:justify-start">
+                  <div className="flex items-center gap-2 justify-center sm:justify-start flex-wrap">
                     {SAMPLE_AVATARS.map((url, i) => (
                       <button
                         key={i}
@@ -412,23 +412,23 @@ export default function AddEmployeeModal({
           </div>
 
           {/* Footer Actions */}
-          <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-3">
+          <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2.5 sm:gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
+              className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors text-center"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting || loadingId}
-              className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-98 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 transition-all"
+              className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-98 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 transition-all text-center"
             >
               {submitting ? (
                 <>
                   <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                  <span>Saving Employee...</span>
+                  <span>Saving...</span>
                 </>
               ) : (
                 <>

@@ -45,23 +45,23 @@ export default function EmployeeProfileModal({
   if (!isOpen || !employee) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
-      <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden my-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-2 sm:p-4 overflow-y-auto">
+      <div className="relative w-full max-w-lg bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-100 overflow-hidden my-auto sm:my-8 max-h-[92vh] flex flex-col">
         {/* Header with gradient banner */}
-        <div className="h-28 bg-gradient-to-r from-blue-700 via-indigo-600 to-cyan-600 relative">
+        <div className="shrink-0 h-24 sm:h-28 bg-gradient-to-r from-blue-700 via-indigo-600 to-cyan-600 relative">
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-1.5 rounded-full bg-black/20 hover:bg-black/40 text-white transition-colors"
+            className="absolute top-3 right-3 sm:top-4 sm:right-4 p-1.5 rounded-full bg-black/20 hover:bg-black/40 text-white transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Profile Card Body */}
-        <div className="px-6 pb-6 pt-0 relative">
+        <div className="px-4 sm:px-6 pb-6 pt-0 relative overflow-y-auto">
           {/* Avatar overlapping banner */}
-          <div className="-mt-14 mb-4 flex items-end justify-between">
-            <div className="relative w-24 h-24 rounded-2xl ring-4 ring-white shadow-lg overflow-hidden bg-white">
+          <div className="-mt-12 sm:-mt-14 mb-4 flex items-end justify-between">
+            <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl ring-4 ring-white shadow-lg overflow-hidden bg-white shrink-0">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={employee.photoUrl}
@@ -72,7 +72,7 @@ export default function EmployeeProfileModal({
 
             <div className="flex items-center gap-2">
               <span
-                className={`px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase ${
+                className={`px-2.5 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold tracking-wide uppercase ${
                   employee.status === 'Active'
                     ? 'bg-emerald-100 text-emerald-800'
                     : 'bg-rose-100 text-rose-800'
@@ -96,8 +96,8 @@ export default function EmployeeProfileModal({
 
           {/* Name & ID */}
           <div className="mb-4">
-            <div className="flex items-center gap-2">
-              <h3 className="text-xl font-black text-slate-900">{employee.name}</h3>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="text-lg sm:text-xl font-black text-slate-900">{employee.name}</h3>
               <span className="px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 font-mono text-xs font-bold">
                 {employee.employeeId}
               </span>
@@ -108,7 +108,7 @@ export default function EmployeeProfileModal({
           </div>
 
           {/* Details Grid */}
-          <div className="grid grid-cols-2 gap-3 p-3.5 bg-slate-50 rounded-xl border border-slate-100 text-xs mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 p-3.5 bg-slate-50 rounded-xl border border-slate-100 text-xs mb-4">
             <div className="flex items-center gap-2 text-slate-600">
               <Mail className="w-4 h-4 text-slate-400 shrink-0" />
               <span className="truncate">{employee.email}</span>

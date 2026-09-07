@@ -9,8 +9,8 @@ export interface AdminUser {
 }
 
 export const DEFAULT_ADMIN = {
-  email: 'admin@mtechno.com',
-  password: 'admin123',
+  email: process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'admin@mtechno.com',
+  password: process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'admin123',
   name: 'M Techno Administrator',
 };
 

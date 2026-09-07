@@ -174,11 +174,11 @@ export default function SettingsPage() {
           </div>
 
           {/* Section 2: Optional Geofence & Location Security */}
-          <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-4">
-            <div className="flex items-center justify-between">
+          <div className="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200/80 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-blue-600" />
+                  <MapPin className="w-4 h-4 text-blue-600 shrink-0" />
                   <span>Geofence Location Security (Optional)</span>
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5">
@@ -187,7 +187,7 @@ export default function SettingsPage() {
               </div>
 
               {/* Toggle Switch */}
-              <label className="relative inline-flex items-center cursor-pointer">
+              <label className="relative inline-flex items-center cursor-pointer shrink-0 self-start sm:self-center">
                 <input
                   type="checkbox"
                   checked={settings.geofenceEnabled}
@@ -315,11 +315,11 @@ export default function SettingsPage() {
           </div>
 
           {/* Submit */}
-          <div className="flex justify-end">
+          <div className="flex sm:justify-end">
             <button
               type="submit"
               disabled={saving}
-              className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 transition-all active:scale-95 disabled:opacity-50"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 transition-all active:scale-95 disabled:opacity-50"
             >
               <Save className="w-4 h-4" />
               <span>{saving ? 'Saving...' : 'Save Settings'}</span>

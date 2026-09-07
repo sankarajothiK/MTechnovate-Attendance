@@ -179,106 +179,106 @@ export default function AdminDashboard() {
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 sm:gap-3">
             <button
               type="button"
               onClick={() => setIsFirebaseModalOpen(true)}
-              className="flex items-center gap-2 px-3.5 py-2.5 bg-white hover:bg-slate-50 text-blue-700 border border-blue-200 rounded-xl text-xs font-bold shadow-2xs transition-all active:scale-95"
+              className="flex items-center justify-center gap-2 px-3 sm:px-3.5 py-2.5 bg-white hover:bg-slate-50 text-blue-700 border border-blue-200 rounded-xl text-xs font-bold shadow-2xs transition-all active:scale-95"
             >
-              <Database className="w-4 h-4 text-blue-600" />
-              <span>Connect Firebase</span>
+              <Database className="w-3.5 h-3.5 text-blue-600" />
+              <span className="truncate">Firebase</span>
             </button>
 
             <button
               type="button"
               onClick={() => setIsQRModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold shadow-2xs transition-all active:scale-95"
+              className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold shadow-2xs transition-all active:scale-95"
             >
-              <QrCode className="w-4 h-4 text-blue-600" />
-              <span>Office QR Poster</span>
+              <QrCode className="w-3.5 h-3.5 text-blue-600" />
+              <span className="truncate">QR Poster</span>
             </button>
 
             <Link
               href="/admin/attendance"
-              className="flex items-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold shadow-xs transition-all active:scale-95"
+              className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold shadow-xs transition-all active:scale-95 text-center"
             >
-              <History className="w-4 h-4" />
-              <span>Attendance History</span>
+              <History className="w-3.5 h-3.5" />
+              <span className="truncate">History</span>
             </Link>
 
             <button
               type="button"
               onClick={() => setIsAddModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 transition-all active:scale-95"
+              className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 bg-gradient-to-r from-[#b76e79] to-[#9e5762] hover:opacity-90 text-white rounded-xl text-xs font-bold shadow-md shadow-[#b76e79]/20 transition-all active:scale-95 text-center"
             >
-              <Plus className="w-4 h-4" />
-              <span>Add Employee</span>
+              <Plus className="w-3.5 h-3.5" />
+              <span className="truncate">Add Staff</span>
             </button>
           </div>
         </div>
 
         {cleanMessage && (
-          <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl flex items-center gap-2 text-xs font-bold shadow-xs">
+          <div className="p-3.5 sm:p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl flex items-center gap-2 text-xs font-bold shadow-xs">
             <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
             <span>{cleanMessage}</span>
           </div>
         )}
 
         {/* METRICS CARDS */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-          <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex items-center justify-between">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+          <div className="bg-white rounded-2xl p-3.5 sm:p-5 border border-slate-200/80 shadow-xs flex items-center justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                Total Employees
+              <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-500">
+                Total Staff
               </p>
-              <h3 className="text-3xl font-black text-slate-900 mt-1">{totalEmployees}</h3>
-              <p className="text-[11px] text-slate-400 mt-0.5">
-                {activeEmployees} Active (Strictly Deduplicated)
+              <h3 className="text-2xl sm:text-3xl font-black text-slate-900 mt-0.5 sm:mt-1">{totalEmployees}</h3>
+              <p className="text-[10px] text-slate-400 mt-0.5">
+                {activeEmployees} Active
               </p>
             </div>
-            <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
-              <Users className="w-6 h-6" />
+            <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+              <Users className="w-4 h-4 sm:w-6 sm:h-6" />
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex items-center justify-between">
+          <div className="bg-white rounded-2xl p-3.5 sm:p-5 border border-slate-200/80 shadow-xs flex items-center justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-emerald-600">
-                Today&apos;s Attendance
+              <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-emerald-600">
+                Present
               </p>
-              <h3 className="text-3xl font-black text-emerald-600 mt-1">{totalPresent}</h3>
-              <p className="text-[11px] text-slate-400 mt-0.5">Marked present today</p>
+              <h3 className="text-2xl sm:text-3xl font-black text-emerald-600 mt-0.5 sm:mt-1">{totalPresent}</h3>
+              <p className="text-[10px] text-slate-400 mt-0.5">Marked today</p>
             </div>
-            <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-              <UserCheck className="w-6 h-6" />
+            <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+              <UserCheck className="w-4 h-4 sm:w-6 sm:h-6" />
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex items-center justify-between">
+          <div className="bg-white rounded-2xl p-3.5 sm:p-5 border border-slate-200/80 shadow-xs flex items-center justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-rose-500">
-                Absent Today
+              <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-rose-500">
+                Absent
               </p>
-              <h3 className="text-3xl font-black text-rose-600 mt-1">{absentCount}</h3>
-              <p className="text-[11px] text-slate-400 mt-0.5">Not yet checked in</p>
+              <h3 className="text-2xl sm:text-3xl font-black text-rose-600 mt-0.5 sm:mt-1">{absentCount}</h3>
+              <p className="text-[10px] text-slate-400 mt-0.5">Not marked</p>
             </div>
-            <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center">
-              <UserX className="w-6 h-6" />
+            <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+              <UserX className="w-4 h-4 sm:w-6 sm:h-6" />
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex items-center justify-between">
+          <div className="bg-white rounded-2xl p-3.5 sm:p-5 border border-slate-200/80 shadow-xs flex items-center justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-amber-600">
-                Late Employees
+              <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-amber-600">
+                Late
               </p>
-              <h3 className="text-3xl font-black text-amber-600 mt-1">{lateRecords.length}</h3>
-              <p className="text-[11px] text-slate-400 mt-0.5">
-                Arrived after {settings?.workStartTime || '09:30 AM'}
+              <h3 className="text-2xl sm:text-3xl font-black text-amber-600 mt-0.5 sm:mt-1">{lateRecords.length}</h3>
+              <p className="text-[10px] text-slate-400 mt-0.5">
+                After {settings?.workStartTime || '09:30 AM'}
               </p>
             </div>
-            <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
-              <Clock className="w-6 h-6" />
+            <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+              <Clock className="w-4 h-4 sm:w-6 sm:h-6" />
             </div>
           </div>
         </div>
@@ -315,7 +315,7 @@ export default function AdminDashboard() {
 
         {/* EMPLOYEE DIRECTORY & TABLE */}
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
-          <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-bold text-slate-900">Registered Employees</h2>
@@ -328,12 +328,12 @@ export default function AdminDashboard() {
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2.5 sm:gap-3 w-full lg:w-auto">
               {/* Clean Duplicates Button */}
               <button
                 type="button"
                 onClick={handleCleanDuplicates}
-                className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-colors"
+                className="flex items-center justify-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-colors"
                 title="Verify and remove any duplicate employees"
               >
                 <Sparkles className="w-3.5 h-3.5 text-blue-600" />
@@ -341,13 +341,13 @@ export default function AdminDashboard() {
               </button>
 
               {/* Search */}
-              <div className="relative">
+              <div className="relative flex-1 sm:w-56">
                 <input
                   type="text"
                   placeholder="Search by ID, name..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9 pr-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full pl-9 pr-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
               </div>
@@ -356,7 +356,7 @@ export default function AdminDashboard() {
               <select
                 value={departmentFilter}
                 onChange={(e) => setDepartmentFilter(e.target.value)}
-                className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full sm:w-auto px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="ALL">All Departments</option>
                 {departments.map((d) => (
@@ -369,7 +369,7 @@ export default function AdminDashboard() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+            <table className="w-full text-left text-xs min-w-[700px]">
               <thead className="bg-slate-50/80 text-slate-600 font-bold uppercase tracking-wider text-[10px] border-b border-slate-100">
                 <tr>
                   <th className="py-3.5 px-4 sm:px-6">Employee ID</th>

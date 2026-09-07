@@ -118,9 +118,9 @@ export default function EmployeesPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between sm:justify-end gap-2.5 sm:gap-3">
             {/* View Mode Toggle */}
-            <div className="bg-white border border-slate-200 rounded-xl p-1 flex items-center shadow-2xs">
+            <div className="bg-white border border-slate-200 rounded-xl p-1 flex items-center shadow-2xs shrink-0">
               <button
                 type="button"
                 onClick={() => setViewMode('grid')}
@@ -146,7 +146,7 @@ export default function EmployeesPage() {
             <button
               type="button"
               onClick={() => setIsAddModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 transition-all active:scale-95"
+              className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 transition-all active:scale-95"
             >
               <Plus className="w-4 h-4" />
               <span>Add Employee</span>
@@ -155,9 +155,9 @@ export default function EmployeesPage() {
         </div>
 
         {/* Filter Bar */}
-        <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-3 flex-1">
-            <div className="relative min-w-[240px]">
+        <div className="bg-white rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2.5 sm:gap-3 flex-1">
+            <div className="relative w-full sm:w-64">
               <input
                 type="text"
                 placeholder="Search by name, MT ID, title..."
@@ -168,31 +168,33 @@ export default function EmployeesPage() {
               <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
             </div>
 
-            <select
-              value={departmentFilter}
-              onChange={(e) => setDepartmentFilter(e.target.value)}
-              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="ALL">All Departments</option>
-              {departments.map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
-            </select>
+            <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 sm:gap-3">
+              <select
+                value={departmentFilter}
+                onChange={(e) => setDepartmentFilter(e.target.value)}
+                className="w-full sm:w-auto px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="ALL">All Departments</option>
+                {departments.map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
+              </select>
 
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="ALL">All Statuses</option>
-              <option value="Active">Active Only</option>
-              <option value="Inactive">Inactive Only</option>
-            </select>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="w-full sm:w-auto px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="ALL">All Statuses</option>
+                <option value="Active">Active Only</option>
+                <option value="Inactive">Inactive Only</option>
+              </select>
+            </div>
           </div>
 
-          <div className="text-xs text-slate-400 font-medium">
+          <div className="text-xs text-slate-400 font-medium self-end sm:self-center">
             Showing <strong className="text-slate-700">{filteredEmployees.length}</strong> of{' '}
             {employees.length} employees
           </div>
@@ -302,7 +304,7 @@ export default function EmployeesPage() {
         {viewMode === 'table' && (
           <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
+              <table className="w-full text-left text-xs min-w-[650px]">
                 <thead className="bg-slate-50/80 text-slate-600 font-bold uppercase tracking-wider text-[10px] border-b border-slate-100">
                   <tr>
                     <th className="py-3.5 px-4 sm:px-6">Employee ID</th>
