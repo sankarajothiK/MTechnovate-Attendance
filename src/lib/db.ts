@@ -597,9 +597,12 @@ export async function syncAllToFirebase(): Promise<{ success: boolean; employees
 
 export async function verifyAndMarkAttendance(
   employeeIdInput: string,
-  userCoords?: { latitude: number; longitude: number }
+  userCoords?: { latitude: number; longitude: number },
+  clientOptions?: { clientTime?: string; clientDateKey?: string }
 ): Promise<VerificationResult> {
   const cleanId = employeeIdInput.trim().toUpperCase();
+  const clientTime = clientOptions?.clientTime || formatTime12h();
+  const clientDateKey = clientOptions?.clientDateKey || getCurrentDateKey();
 
   // 1. Browser client: call server API endpoint
   if (typeof window !== 'undefined') {
@@ -607,7 +610,12 @@ export async function verifyAndMarkAttendance(
       const res = await fetch('/api/attendance', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ employeeId: cleanId, userCoords }),
+        body: JSON.stringify({
+          employeeId: cleanId,
+          userCoords,
+          clientTime,
+          clientDateKey,
+        }),
       });
       const json = await res.json();
       if (json) {
@@ -681,9 +689,9 @@ export async function verifyAndMarkAttendance(
     }
   }
 
-  const todayKey = getCurrentDateKey();
+  const todayKey = clientDateKey || getCurrentDateKey();
   const displayDate = formatDisplayDate(todayKey);
-  const currentTime = formatTime12h();
+  const currentTime = clientTime || formatTime12h();
   const existingRecord = await getTodayRecordForEmployee(employee.employeeId, todayKey);
 
   // CASE A: Check-In

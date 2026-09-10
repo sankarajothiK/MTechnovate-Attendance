@@ -52,7 +52,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { employeeId, userCoords } = body;
+    const { employeeId, userCoords, clientTime, clientDateKey } = body;
 
     if (!employeeId) {
       return NextResponse.json(
@@ -138,10 +138,16 @@ export async function POST(request: Request) {
       }
     }
 
-    // 4. Today's attendance
-    const todayKey = getCurrentDateKey();
+    // 4. Today's attendance - timezone-accurate (Asia/Kolkata / IST)
+    const todayKey =
+      typeof clientDateKey === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(clientDateKey.trim())
+        ? clientDateKey.trim()
+        : getCurrentDateKey();
     const displayDate = formatDisplayDate(todayKey);
-    const currentTime = formatTime12h();
+    const currentTime =
+      typeof clientTime === 'string' && /^\d{1,2}:\d{2}\s*(AM|PM)$/i.test(clientTime.trim())
+        ? clientTime.trim().toUpperCase()
+        : formatTime12h();
     const recordDocId = `att-${employee.employeeId}-${todayKey}`;
 
     const existingRecordSnap = await getDoc(doc(db, 'attendance', recordDocId));

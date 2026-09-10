@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { verifyAndMarkAttendance, getOfficeSettings } from '@/lib/db';
 import { Employee, AttendanceRecord, OfficeSettings } from '@/types';
-import { formatTime12h, formatDisplayDate } from '@/lib/dateUtils';
+import { formatTime12h, formatDisplayDate, getCurrentDateKey } from '@/lib/dateUtils';
 import Link from 'next/link';
 
 export default function AttendancePage() {
@@ -96,7 +96,13 @@ export default function AttendancePage() {
     }
 
     try {
-      const result = await verifyAndMarkAttendance(targetId, coords);
+      const now = new Date();
+      const localTime = formatTime12h(now);
+      const localDateKey = getCurrentDateKey(now);
+      const result = await verifyAndMarkAttendance(targetId, coords, {
+        clientTime: localTime,
+        clientDateKey: localDateKey,
+      });
 
       if (result.success) {
         setVerifiedEmployee(result.employee || null);

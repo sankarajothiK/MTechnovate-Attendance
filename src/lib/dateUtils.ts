@@ -1,47 +1,86 @@
 /**
  * Date and time formatting helpers for M Techno attendance system
+ * Standardized to Indian Standard Time (Asia/Kolkata, UTC+5:30)
  */
 
-export function getCurrentDateKey(d = new Date()): string {
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
+export const DEFAULT_TIMEZONE = 'Asia/Kolkata';
 
-export function formatDisplayDate(dateStrOrObj: string | Date): string {
-  let d: Date;
-  if (typeof dateStrOrObj === 'string') {
-    // If format is YYYY-MM-DD
-    const parts = dateStrOrObj.split('-');
-    if (parts.length === 3) {
-      d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
-    } else {
-      d = new Date(dateStrOrObj);
-    }
-  } else {
-    d = dateStrOrObj;
+export function getCurrentDateKey(d: Date | string = new Date(), timeZone = DEFAULT_TIMEZONE): string {
+  const dateObj = typeof d === 'string' ? new Date(d) : d;
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(dateObj);
+
+    const year = parts.find((p) => p.type === 'year')?.value || '2026';
+    const month = parts.find((p) => p.type === 'month')?.value || '01';
+    const day = parts.find((p) => p.type === 'day')?.value || '01';
+    return `${year}-${month}-${day}`;
+  } catch {
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
-
-  const months = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ];
-
-  const day = String(d.getDate()).padStart(2, '0');
-  const month = months[d.getMonth()];
-  const year = d.getFullYear();
-  return `${day} ${month} ${year}`;
 }
 
-export function formatTime12h(date = new Date()): string {
-  let hours = date.getHours();
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  const ampm = hours >= 12 ? 'PM' : 'AM';
-  hours = hours % 12;
-  hours = hours ? hours : 12; // 0 becomes 12
-  const formattedHours = String(hours).padStart(2, '0');
-  return `${formattedHours}:${minutes} ${ampm}`;
+export function formatDisplayDate(dateStrOrObj: string | Date, timeZone = DEFAULT_TIMEZONE): string {
+  try {
+    let d: Date;
+    if (typeof dateStrOrObj === 'string') {
+      const parts = dateStrOrObj.split('-');
+      if (parts.length === 3) {
+        d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10), 12, 0, 0);
+      } else {
+        d = new Date(dateStrOrObj);
+      }
+    } else {
+      d = dateStrOrObj;
+    }
+
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+    }).formatToParts(d);
+
+    const day = parts.find((p) => p.type === 'day')?.value || '01';
+    const month = parts.find((p) => p.type === 'month')?.value || '';
+    const year = parts.find((p) => p.type === 'year')?.value || '2026';
+    return `${day} ${month} ${year}`;
+  } catch {
+    return String(dateStrOrObj);
+  }
+}
+
+export function formatTime12h(date: Date | string = new Date(), timeZone = DEFAULT_TIMEZONE): string {
+  try {
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    }).formatToParts(dateObj);
+
+    const hour = (parts.find((p) => p.type === 'hour')?.value || '12').padStart(2, '0');
+    const minute = (parts.find((p) => p.type === 'minute')?.value || '00').padStart(2, '0');
+    const dayPeriod = (parts.find((p) => p.type === 'dayPeriod')?.value || 'AM').toUpperCase();
+    return `${hour}:${minute} ${dayPeriod}`;
+  } catch {
+    const d = typeof date === 'string' ? new Date(date) : date;
+    let hours = d.getHours();
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12; // 0 becomes 12
+    const formattedHours = String(hours).padStart(2, '0');
+    return `${formattedHours}:${minutes} ${ampm}`;
+  }
 }
 
 export function parseTimeMinutes(timeStr: string): number {
