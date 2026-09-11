@@ -43,7 +43,7 @@ export default function SettingsPage() {
     radiusMeters: 150,
     workStartTime: '09:30 AM',
     workEndTime: '06:00 PM',
-    ownerEmail: 'sankarajothik@gmail.com',
+    ownerEmail: 'mtechnovatesolutions@gmail.com',
     autoEmailReportEnabled: true,
     emailReportTime: '09:35 AM',
     smtpHost: '',
@@ -65,7 +65,7 @@ export default function SettingsPage() {
         setSettings({
           ...settings,
           ...s,
-          ownerEmail: s.ownerEmail || 'sankarajothik@gmail.com',
+          ownerEmail: s.ownerEmail || 'mtechnovatesolutions@gmail.com',
           emailReportTime: s.emailReportTime || '09:35 AM',
           autoEmailReportEnabled: s.autoEmailReportEnabled !== false,
         });

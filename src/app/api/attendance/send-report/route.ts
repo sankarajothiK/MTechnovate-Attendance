@@ -32,7 +32,7 @@ export async function POST(request: Request) {
       radiusMeters: 150,
       workStartTime: '09:30 AM',
       workEndTime: '06:00 PM',
-      ownerEmail: 'sankarajothik@gmail.com', // default fallback
+      ownerEmail: 'mtechnovatesolutions@gmail.com', // default fallback
     };
 
     try {
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
       console.warn('Error fetching office settings:', e);
     }
 
-    const recipient = customRecipient || settings.ownerEmail || 'sankarajothik@gmail.com';
+    const recipient = customRecipient || settings.ownerEmail || 'mtechnovatesolutions@gmail.com';
 
     if (!recipient) {
       return NextResponse.json(

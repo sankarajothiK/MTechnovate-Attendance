@@ -12,4 +12,7 @@ export const INITIAL_SETTINGS: OfficeSettings = {
   radiusMeters: 150,
   workStartTime: '09:30 AM',
   workEndTime: '06:00 PM',
+  ownerEmail: 'mtechnovatesolutions@gmail.com',
+  autoEmailReportEnabled: true,
+  emailReportTime: '09:35 AM',
 };
