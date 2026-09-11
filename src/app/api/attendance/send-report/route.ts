@@ -226,24 +226,43 @@ export async function POST(request: Request) {
       </html>
     `;
 
-    // 5. Send via Transporter if SMTP configured
+    // 5. Send via Transporter
+    const smtpUser = settings.smtpUser || process.env.SMTP_USER || settings.ownerEmail || 'mtechnovatesolutions@gmail.com';
+    const smtpPass = (settings.smtpPass || process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD || '').trim().replace(/\s+/g, '');
+    const smtpHost = settings.smtpHost || process.env.SMTP_HOST || 'smtp.gmail.com';
+    const smtpPort = settings.smtpPort || Number(process.env.SMTP_PORT) || 465;
+    const smtpSender = settings.smtpSenderEmail || process.env.SMTP_SENDER || `M Technovate Attendance <${smtpUser}>`;
+
     let mailSent = false;
     let mailError: string | null = null;
 
-    if (settings.smtpHost && settings.smtpUser && settings.smtpPass) {
+    if (smtpPass) {
       try {
-        const transporter = nodemailer.createTransport({
-          host: settings.smtpHost,
-          port: settings.smtpPort || 587,
-          secure: (settings.smtpPort || 587) === 465,
-          auth: {
-            user: settings.smtpUser,
-            pass: settings.smtpPass,
-          },
-        });
+        const isGmail = smtpHost.includes('gmail') || smtpUser.includes('@gmail.com');
+        const transporterConfig = isGmail
+          ? {
+              service: 'gmail',
+              auth: {
+                user: smtpUser,
+                pass: smtpPass,
+              },
+            }
+          : {
+              host: smtpHost,
+              port: smtpPort,
+              secure: smtpPort === 465,
+              auth: {
+                user: smtpUser,
+                pass: smtpPass,
+              },
+            };
+
+        const transporter = nodemailer.createTransport(
+          transporterConfig as Parameters<typeof nodemailer.createTransport>[0]
+        );
 
         await transporter.sendMail({
-          from: settings.smtpSenderEmail || settings.smtpUser,
+          from: smtpSender,
           to: recipient,
           subject: `[M Technovate] Daily Attendance Report - ${displayDate} (${presentCount}/${totalStaff} Present)`,
           html: emailHtml,
@@ -251,14 +270,34 @@ export async function POST(request: Request) {
 
         mailSent = true;
       } catch (err: unknown) {
-        console.error('Custom SMTP send failed:', err);
-        mailError = err instanceof Error ? err.message : 'SMTP send failed';
+        console.error('SMTP send failed:', err);
+        mailError = err instanceof Error ? err.message : 'SMTP dispatch failed';
       }
+    }
+
+    if (!mailSent) {
+      return NextResponse.json({
+        success: false,
+        mailSent: false,
+        recipient,
+        date: displayDate,
+        metrics: {
+          totalStaff,
+          presentCount,
+          lateCount,
+          absentCount: absentStaff.length,
+          onPermissionCount,
+        },
+        message: mailError
+          ? `Email dispatch failed: ${mailError}. Please verify your Gmail App Password in Admin Settings.`
+          : `Email delivery setup required: Please enter your 16-character Gmail App Password in Admin Settings to enable email delivery to ${recipient}.`,
+        error: mailError || 'Missing SMTP password / Gmail App Password',
+      });
     }
 
     return NextResponse.json({
       success: true,
-      mailSent,
+      mailSent: true,
       recipient,
       date: displayDate,
       metrics: {
@@ -268,10 +307,7 @@ export async function POST(request: Request) {
         absentCount: absentStaff.length,
         onPermissionCount,
       },
-      message: mailSent
-        ? `Daily attendance report successfully sent to ${recipient}`
-        : `Daily report generated for ${recipient}. (${mailError ? `SMTP Error: ${mailError}` : 'Configure SMTP credentials in Settings for direct SMTP dispatch'}).`,
-      error: mailError,
+      message: `Daily attendance report successfully delivered to ${recipient} ✓`,
     });
   } catch (error: unknown) {
     console.error('Send report error:', error);

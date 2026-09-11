@@ -18,6 +18,7 @@ import {
   Mail,
   Send,
   Sparkles,
+  Key,
 } from 'lucide-react';
 import { getOfficeSettings, updateOfficeSettings, sendDailyAttendanceReport } from '@/lib/db';
 import { OfficeSettings } from '@/types';
@@ -273,6 +274,59 @@ export default function SettingsPage() {
               </div>
             </div>
 
+            {/* Gmail App Password / SMTP Setup */}
+            <div className="bg-[#f8fafc] p-4 rounded-xl border border-slate-200 space-y-3">
+              <div>
+                <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                  <Key className="w-3.5 h-3.5 text-blue-600" />
+                  <span>Sender Email Credentials (Required for Live Email Dispatch)</span>
+                </h4>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  Enter your Google Account 16-character App Password to authorize sending emails to {settings.ownerEmail || 'mtechnovatesolutions@gmail.com'}.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div>
+                  <label className="block text-slate-600 font-bold uppercase tracking-wider mb-1">
+                    Gmail App Password (16 Letters)
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="e.g. abcd efgh ijkl mnop"
+                    value={settings.smtpPass || ''}
+                    onChange={(e) => setSettings({ ...settings, smtpPass: e.target.value })}
+                    className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-600 font-bold uppercase tracking-wider mb-1">
+                    Sender Gmail Account
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="mtechnovatesolutions@gmail.com"
+                    value={settings.smtpUser || settings.ownerEmail || ''}
+                    onChange={(e) => setSettings({ ...settings, smtpUser: e.target.value })}
+                    className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div className="bg-amber-50 p-3 rounded-xl border border-amber-200 text-[11px] text-amber-900 space-y-1">
+                <p className="font-bold flex items-center gap-1 text-amber-950">
+                  💡 How to get your free 16-letter Gmail App Password in 30 seconds:
+                </p>
+                <ol className="list-decimal list-inside space-y-0.5 text-amber-900 pl-1 text-[11px]">
+                  <li>Open Google Security: <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noreferrer" className="underline font-bold text-blue-700">myaccount.google.com/apppasswords</a></li>
+                  <li>Sign in with your Gmail account (make sure 2-Step Verification is turned ON).</li>
+                  <li>In App name box, type: <strong>MTechnovate</strong> and click <strong>Create</strong>.</li>
+                  <li>Copy the 16-character password (e.g. <code>abcd efgh ijkl mnop</code>), paste it above, and click <strong>Save Settings</strong>!</li>
+                </ol>
+              </div>
+            </div>
+
             {/* Test Send Button */}
             <div className="pt-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-[#fff9f9] p-4 rounded-xl border border-[#ebdcdc]">
               <div className="space-y-0.5">
@@ -280,7 +334,7 @@ export default function SettingsPage() {
                   <Sparkles className="w-3.5 h-3.5 text-[#b76e79]" /> Test Live Email Dispatch
                 </p>
                 <p className="text-[11px] text-slate-500">
-                  Generate today&apos;s live attendance summary and test delivery immediately.
+                  Generate today&apos;s live attendance summary and dispatch to {settings.ownerEmail || 'mtechnovatesolutions@gmail.com'}.
                 </p>
               </div>
               <button
@@ -290,7 +344,7 @@ export default function SettingsPage() {
                 className="flex items-center gap-2 px-4 py-2 bg-[#b76e79] hover:bg-[#a0636d] text-white rounded-xl text-xs font-bold shadow-sm transition-all active:scale-95 disabled:opacity-50 cursor-pointer shrink-0"
               >
                 <Send className="w-3.5 h-3.5" />
-                <span>{sendingTestMail ? 'Generating...' : 'Send Attendance Report Now'}</span>
+                <span>{sendingTestMail ? 'Dispatching...' : 'Send Attendance Report Now'}</span>
               </button>
             </div>
           </div>
