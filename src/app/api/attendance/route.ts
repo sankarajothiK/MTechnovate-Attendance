@@ -7,6 +7,7 @@ import {
   formatDisplayDate,
   formatTime12h,
   calculateWorkingHours,
+  calculatePermissionDuration,
   isLateCheckIn,
   calculateDistanceMeters,
 } from '@/lib/dateUtils';
@@ -52,7 +53,15 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { employeeId, userCoords, clientTime, clientDateKey } = body;
+    const {
+      employeeId,
+      userCoords,
+      clientTime,
+      clientDateKey,
+      action = 'AUTO', // 'CHECK_IN' | 'CHECK_OUT' | 'PERMISSION_OUT' | 'PERMISSION_IN' | 'AUTO'
+      willReturnToday = true, // for permission out: true = returning later; false = leaving for the day (book checkout)
+      permissionReason = '',
+    } = body;
 
     if (!employeeId) {
       return NextResponse.json(
@@ -153,7 +162,7 @@ export async function POST(request: Request) {
     const existingRecordSnap = await getDoc(doc(db, 'attendance', recordDocId));
     const existingRecord = existingRecordSnap.exists() ? (existingRecordSnap.data() as AttendanceRecord) : null;
 
-    // CASE A: Not checked in yet today -> MARK CHECK-IN
+    // CASE 1: Not checked in yet today -> MARK CHECK-IN
     if (!existingRecord) {
       const isLate = isLateCheckIn(currentTime, settings.workStartTime);
       const newRecord: AttendanceRecord = {
@@ -165,6 +174,7 @@ export async function POST(request: Request) {
         displayDate,
         checkInTime: currentTime,
         status: isLate ? 'Late' : 'Present',
+        permissionStatus: 'NONE',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -177,19 +187,65 @@ export async function POST(request: Request) {
       return NextResponse.json({
         success: true,
         type: 'CHECK_IN',
+        currentStatus: 'CHECKED_IN',
         message: 'Attendance Marked Successfully ✓',
         employee,
         record: newRecord,
       });
     }
 
-    // CASE B: Checked in today, but not checked out -> MARK CHECK-OUT
-    if (existingRecord.checkInTime && !existingRecord.checkOutTime) {
-      const totalHours = calculateWorkingHours(existingRecord.checkInTime, currentTime);
+    // If already checked out today
+    if (existingRecord.checkOutTime) {
+      return NextResponse.json({
+        success: false,
+        type: 'ALREADY_COMPLETED',
+        currentStatus: 'COMPLETED',
+        message: `You already marked your attendance today (Check-in: ${existingRecord.checkInTime}, Check-out: ${existingRecord.checkOutTime}, Total: ${existingRecord.totalHours}).`,
+        employee,
+        record: existingRecord,
+      });
+    }
+
+    // CASE 2: Employee is currently OUT ON PERMISSION
+    const isOutOnPermission =
+      existingRecord.permissionStatus === 'OUT_ON_PERMISSION' &&
+      Boolean(existingRecord.permissionOutTime) &&
+      !existingRecord.permissionInTime;
+
+    if (isOutOnPermission) {
+      // 2A. Final Check-Out without returning (or willReturnToday === false)
+      if (action === 'CHECK_OUT' || willReturnToday === false) {
+        const totalHours = calculateWorkingHours(existingRecord.checkInTime, currentTime);
+        const updatedRecord: AttendanceRecord = {
+          ...existingRecord,
+          checkOutTime: currentTime,
+          totalHours,
+          permissionStatus: 'NOT_RETURNED',
+          updatedAt: new Date().toISOString(),
+        };
+        if (locationData || existingRecord.location) {
+          updatedRecord.location = locationData || existingRecord.location;
+        }
+
+        await setDoc(doc(db, 'attendance', recordDocId), cleanForFirestore(updatedRecord as unknown as Record<string, unknown>));
+
+        return NextResponse.json({
+          success: true,
+          type: 'CHECK_OUT',
+          currentStatus: 'COMPLETED',
+          message: 'Check-Out (Permission Exit) Recorded Successfully ✓',
+          employee,
+          record: updatedRecord,
+        });
+      }
+
+      // 2B. Return from Permission (Permission In)
+      const permDuration = calculatePermissionDuration(existingRecord.permissionOutTime || currentTime, currentTime);
       const updatedRecord: AttendanceRecord = {
         ...existingRecord,
-        checkOutTime: currentTime,
-        totalHours,
+        permissionInTime: currentTime,
+        permissionDuration: permDuration,
+        permissionStatus: 'RETURNED',
         updatedAt: new Date().toISOString(),
       };
       if (locationData || existingRecord.location) {
@@ -200,20 +256,90 @@ export async function POST(request: Request) {
 
       return NextResponse.json({
         success: true,
-        type: 'CHECK_OUT',
-        message: 'Check-Out Recorded Successfully ✓',
+        type: 'PERMISSION_IN',
+        currentStatus: 'CHECKED_IN',
+        message: `Permission Return Recorded Successfully ✓ (Away: ${permDuration})`,
         employee,
         record: updatedRecord,
       });
     }
 
-    // CASE C: Already checked in and checked out today
+    // CASE 3: Employee is IN OFFICE (Checked In, Not on active permission)
+    // 3A. Permission Out requested
+    if (action === 'PERMISSION_OUT') {
+      // If employee won't return today -> book as Check-Out directly
+      if (willReturnToday === false) {
+        const totalHours = calculateWorkingHours(existingRecord.checkInTime, currentTime);
+        const updatedRecord: AttendanceRecord = {
+          ...existingRecord,
+          checkOutTime: currentTime,
+          totalHours,
+          permissionOutTime: currentTime,
+          permissionStatus: 'NOT_RETURNED',
+          permissionReason: permissionReason || 'Early Exit / Permission',
+          updatedAt: new Date().toISOString(),
+        };
+        if (locationData || existingRecord.location) {
+          updatedRecord.location = locationData || existingRecord.location;
+        }
+
+        await setDoc(doc(db, 'attendance', recordDocId), cleanForFirestore(updatedRecord as unknown as Record<string, unknown>));
+
+        return NextResponse.json({
+          success: true,
+          type: 'CHECK_OUT',
+          currentStatus: 'COMPLETED',
+          message: 'Check-Out Recorded Successfully (Not Returning Today) ✓',
+          employee,
+          record: updatedRecord,
+        });
+      }
+
+      // Record Permission Out (will return today)
+      const updatedRecord: AttendanceRecord = {
+        ...existingRecord,
+        permissionOutTime: currentTime,
+        permissionStatus: 'OUT_ON_PERMISSION',
+        permissionReason: permissionReason || 'Permission / Gate Pass',
+        updatedAt: new Date().toISOString(),
+      };
+      if (locationData || existingRecord.location) {
+        updatedRecord.location = locationData || existingRecord.location;
+      }
+
+      await setDoc(doc(db, 'attendance', recordDocId), cleanForFirestore(updatedRecord as unknown as Record<string, unknown>));
+
+      return NextResponse.json({
+        success: true,
+        type: 'PERMISSION_OUT',
+        currentStatus: 'OUT_ON_PERMISSION',
+        message: 'Permission Out Recorded Successfully ✓ (Gate Pass Active)',
+        employee,
+        record: updatedRecord,
+      });
+    }
+
+    // 3B. Check-Out requested (or AUTO default)
+    const totalHours = calculateWorkingHours(existingRecord.checkInTime, currentTime);
+    const updatedRecord: AttendanceRecord = {
+      ...existingRecord,
+      checkOutTime: currentTime,
+      totalHours,
+      updatedAt: new Date().toISOString(),
+    };
+    if (locationData || existingRecord.location) {
+      updatedRecord.location = locationData || existingRecord.location;
+    }
+
+    await setDoc(doc(db, 'attendance', recordDocId), cleanForFirestore(updatedRecord as unknown as Record<string, unknown>));
+
     return NextResponse.json({
-      success: false,
-      type: 'ALREADY_COMPLETED',
-      message: `You already marked your attendance today (Check-in: ${existingRecord.checkInTime}, Check-out: ${existingRecord.checkOutTime}, Total: ${existingRecord.totalHours}).`,
+      success: true,
+      type: 'CHECK_OUT',
+      currentStatus: 'COMPLETED',
+      message: 'Check-Out Recorded Successfully ✓',
       employee,
-      record: existingRecord,
+      record: updatedRecord,
     });
   } catch (error: unknown) {
     console.error('API POST /api/attendance error:', error);

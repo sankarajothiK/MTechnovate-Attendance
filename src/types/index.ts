@@ -22,6 +22,11 @@ export interface AttendanceRecord {
   checkInTime: string; // e.g. 09:14 AM
   checkOutTime?: string; // e.g. 06:02 PM
   totalHours?: string; // e.g. 8h 48m
+  permissionOutTime?: string; // e.g. 02:30 PM
+  permissionInTime?: string; // e.g. 03:45 PM
+  permissionDuration?: string; // e.g. 1h 15m
+  permissionStatus?: 'NONE' | 'OUT_ON_PERMISSION' | 'RETURNED' | 'NOT_RETURNED';
+  permissionReason?: string;
   status: 'Present' | 'Late' | 'Half Day';
   location?: {
     latitude: number;
@@ -42,12 +47,21 @@ export interface OfficeSettings {
   radiusMeters: number;
   workStartTime: string; // "09:30 AM"
   workEndTime: string; // "06:00 PM"
+  ownerEmail?: string;
+  autoEmailReportEnabled?: boolean;
+  emailReportTime?: string; // e.g. "09:35 AM"
+  smtpHost?: string;
+  smtpPort?: number;
+  smtpUser?: string;
+  smtpPass?: string;
+  smtpSenderEmail?: string;
 }
 
 export interface VerificationResult {
   success: boolean;
-  type: 'CHECK_IN' | 'CHECK_OUT' | 'ALREADY_COMPLETED' | 'ERROR';
+  type: 'CHECK_IN' | 'CHECK_OUT' | 'PERMISSION_OUT' | 'PERMISSION_IN' | 'CHOOSE_ACTION' | 'ALREADY_COMPLETED' | 'ERROR';
   message: string;
+  currentStatus?: 'NOT_CHECKED_IN' | 'CHECKED_IN' | 'OUT_ON_PERMISSION' | 'COMPLETED';
   employee?: Employee;
   record?: AttendanceRecord;
 }

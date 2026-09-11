@@ -6,7 +6,6 @@ import Navbar from '@/components/Navbar';
 import QRCodeModal from '@/components/QRCodeModal';
 import FirebaseSettingsModal from '@/components/FirebaseSettingsModal';
 import {
-  Sliders,
   MapPin,
   Clock,
   Building,
@@ -16,8 +15,11 @@ import {
   ArrowLeft,
   Navigation,
   Shield,
+  Mail,
+  Send,
+  Sparkles,
 } from 'lucide-react';
-import { getOfficeSettings, updateOfficeSettings } from '@/lib/db';
+import { getOfficeSettings, updateOfficeSettings, sendDailyAttendanceReport } from '@/lib/db';
 import { OfficeSettings } from '@/types';
 import { getStoredAdmin } from '@/lib/auth';
 import Link from 'next/link';
@@ -26,13 +28,14 @@ export default function SettingsPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [sendingTestMail, setSendingTestMail] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [isQRModalOpen, setIsQRModalOpen] = useState(false);
   const [isFirebaseModalOpen, setIsFirebaseModalOpen] = useState(false);
 
   const [settings, setSettings] = useState<OfficeSettings>({
-    officeName: 'M Techno Headquarters',
+    officeName: 'M Technovate Solutions Headquarters',
     officeAddress: 'Tech Hub Park, Tower 4, Cyber City',
     geofenceEnabled: false,
     latitude: 12.9716,
@@ -40,6 +43,14 @@ export default function SettingsPage() {
     radiusMeters: 150,
     workStartTime: '09:30 AM',
     workEndTime: '06:00 PM',
+    ownerEmail: 'sankarajothik@gmail.com',
+    autoEmailReportEnabled: true,
+    emailReportTime: '09:35 AM',
+    smtpHost: '',
+    smtpPort: 587,
+    smtpUser: '',
+    smtpPass: '',
+    smtpSenderEmail: '',
   });
 
   useEffect(() => {
@@ -51,7 +62,13 @@ export default function SettingsPage() {
   useEffect(() => {
     getOfficeSettings()
       .then((s) => {
-        setSettings(s);
+        setSettings({
+          ...settings,
+          ...s,
+          ownerEmail: s.ownerEmail || 'sankarajothik@gmail.com',
+          emailReportTime: s.emailReportTime || '09:35 AM',
+          autoEmailReportEnabled: s.autoEmailReportEnabled !== false,
+        });
       })
       .finally(() => setLoading(false));
   }, []);
@@ -76,6 +93,28 @@ export default function SettingsPage() {
         setTimeout(() => setErrorMsg(''), 4000);
       }
     );
+  };
+
+  const handleSendTestReport = async () => {
+    setSendingTestMail(true);
+    setSuccessMsg('');
+    setErrorMsg('');
+    try {
+      const res = await sendDailyAttendanceReport(settings.ownerEmail);
+      if (res.success) {
+        setSuccessMsg(res.message);
+      } else {
+        setErrorMsg(res.error || res.message || 'Failed to trigger test report.');
+      }
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : 'Error sending report');
+    } finally {
+      setSendingTestMail(false);
+      setTimeout(() => {
+        setSuccessMsg('');
+        setErrorMsg('');
+      }, 5000);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -117,7 +156,7 @@ export default function SettingsPage() {
               Office & Attendance Settings
             </h1>
             <p className="text-xs text-slate-500 mt-0.5">
-              Configure office GPS coordinates, geofence radius, and work shift times
+              Configure office shift timings, automated 09:35 AM owner email reporting, and GPS boundaries
             </p>
           </div>
         </div>
@@ -173,7 +212,129 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* Section 2: Optional Geofence & Location Security */}
+          {/* Section 2: Automated 09:35 AM Owner Email Report */}
+          <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-[#b76e79]" />
+                  <span>Daily Owner Email Report (09:35 AM)</span>
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Automatically email complete daily attendance summary (Present, Late, Absent, Permissions) to the owner
+                </p>
+              </div>
+
+              <label className="relative inline-flex items-center cursor-pointer shrink-0 self-start sm:self-center">
+                <input
+                  type="checkbox"
+                  checked={settings.autoEmailReportEnabled !== false}
+                  onChange={(e) =>
+                    setSettings({ ...settings, autoEmailReportEnabled: e.target.checked })
+                  }
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#b76e79]"></div>
+              </label>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs pt-2">
+              <div>
+                <label className="block text-slate-600 font-bold uppercase tracking-wider mb-1.5">
+                  Owner / Notification Email Address
+                </label>
+                <input
+                  type="email"
+                  required
+                  placeholder="e.g. sankarajothik@gmail.com"
+                  value={settings.ownerEmail || ''}
+                  onChange={(e) => setSettings({ ...settings, ownerEmail: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#b76e79]"
+                />
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Full daily report with attendance table will be delivered to this address.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-slate-600 font-bold uppercase tracking-wider mb-1.5">
+                  Daily Delivery Time (IST)
+                </label>
+                <input
+                  type="text"
+                  placeholder="09:35 AM"
+                  value={settings.emailReportTime || '09:35 AM'}
+                  onChange={(e) => setSettings({ ...settings, emailReportTime: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#b76e79]"
+                />
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Scheduled daily cron runs automatically at 09:35 AM Indian Standard Time.
+                </p>
+              </div>
+            </div>
+
+            {/* Test Send Button */}
+            <div className="pt-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-[#fff9f9] p-4 rounded-xl border border-[#ebdcdc]">
+              <div className="space-y-0.5">
+                <p className="text-xs font-bold text-[#8e4a55] flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-[#b76e79]" /> Test Live Email Dispatch
+                </p>
+                <p className="text-[11px] text-slate-500">
+                  Generate today&apos;s live attendance summary and test delivery immediately.
+                </p>
+              </div>
+              <button
+                type="button"
+                disabled={sendingTestMail}
+                onClick={handleSendTestReport}
+                className="flex items-center gap-2 px-4 py-2 bg-[#b76e79] hover:bg-[#a0636d] text-white rounded-xl text-xs font-bold shadow-sm transition-all active:scale-95 disabled:opacity-50 cursor-pointer shrink-0"
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span>{sendingTestMail ? 'Generating...' : 'Send Attendance Report Now'}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Section 3: Shift Times & Late Threshold */}
+          <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-4">
+            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+              <Clock className="w-4 h-4 text-blue-600" />
+              <span>Shift Timing & Late Arrival Rules</span>
+            </h2>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+              <div>
+                <label className="block text-slate-600 font-bold uppercase tracking-wider mb-1.5">
+                  Shift Start Time (Late Threshold)
+                </label>
+                <input
+                  type="text"
+                  placeholder="09:30 AM"
+                  value={settings.workStartTime}
+                  onChange={(e) => setSettings({ ...settings, workStartTime: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Employees checking in after this time will be tagged as &quot;Late&quot;.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-slate-600 font-bold uppercase tracking-wider mb-1.5">
+                  Shift End Time
+                </label>
+                <input
+                  type="text"
+                  placeholder="06:00 PM"
+                  value={settings.workEndTime}
+                  onChange={(e) => setSettings({ ...settings, workEndTime: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Section 4: Optional Geofence & Location Security */}
           <div className="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200/80 shadow-xs space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
@@ -186,7 +347,6 @@ export default function SettingsPage() {
                 </p>
               </div>
 
-              {/* Toggle Switch */}
               <label className="relative inline-flex items-center cursor-pointer shrink-0 self-start sm:self-center">
                 <input
                   type="checkbox"
@@ -209,9 +369,6 @@ export default function SettingsPage() {
                 ) : (
                   <span className="text-slate-600 font-bold">Disabled (Attendance Allowed from Any Location)</span>
                 )}
-              </p>
-              <p className="mt-1 text-slate-600">
-                When enabled, the employee&apos;s phone must be within the specified radius of the office coordinates.
               </p>
             </div>
 
@@ -275,51 +432,12 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* Section 3: Shift Times & Late Threshold */}
-          <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-4">
-            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <Clock className="w-4 h-4 text-blue-600" />
-              <span>Shift Timing & Late Arrival Rules</span>
-            </h2>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-              <div>
-                <label className="block text-slate-600 font-bold uppercase tracking-wider mb-1.5">
-                  Shift Start Time (Late Threshold)
-                </label>
-                <input
-                  type="text"
-                  placeholder="09:30 AM"
-                  value={settings.workStartTime}
-                  onChange={(e) => setSettings({ ...settings, workStartTime: e.target.value })}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <p className="text-[11px] text-slate-400 mt-1">
-                  Employees checking in after this time will be tagged as &quot;Late&quot;.
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-slate-600 font-bold uppercase tracking-wider mb-1.5">
-                  Shift End Time
-                </label>
-                <input
-                  type="text"
-                  placeholder="06:00 PM"
-                  value={settings.workEndTime}
-                  onChange={(e) => setSettings({ ...settings, workEndTime: e.target.value })}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            </div>
-          </div>
-
           {/* Submit */}
           <div className="flex sm:justify-end">
             <button
               type="submit"
               disabled={saving}
-              className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 transition-all active:scale-95 disabled:opacity-50"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
             >
               <Save className="w-4 h-4" />
               <span>{saving ? 'Saving...' : 'Save Settings'}</span>

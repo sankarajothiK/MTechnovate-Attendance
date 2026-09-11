@@ -115,6 +115,22 @@ export function calculateWorkingHours(checkIn: string, checkOut: string): string
   }
 }
 
+export function calculatePermissionDuration(outTime: string, inTime: string): string {
+  try {
+    const outMinutes = parseTimeMinutes(outTime);
+    const inMinutes = parseTimeMinutes(inTime);
+    let diff = inMinutes - outMinutes;
+    if (diff < 0) diff += 24 * 60;
+
+    const hours = Math.floor(diff / 60);
+    const mins = diff % 60;
+    if (hours === 0) return `${mins}m`;
+    return `${hours}h ${mins}m`;
+  } catch {
+    return '0m';
+  }
+}
+
 export function isLateCheckIn(checkInTime: string, startTimeThreshold = '09:30 AM'): boolean {
   const checkInMin = parseTimeMinutes(checkInTime);
   const thresholdMin = parseTimeMinutes(startTimeThreshold);

@@ -6,16 +6,17 @@ import {
   CheckCircle2,
   AlertCircle,
   Clock,
-  Calendar,
   UserCheck,
   ShieldAlert,
-  ArrowRight,
   LogOut,
   MapPin,
   Sparkles,
   RefreshCw,
   Lock,
-  ChevronRight,
+  DoorOpen,
+  LogIn,
+  HelpCircle,
+  Timer,
 } from 'lucide-react';
 import { verifyAndMarkAttendance, getOfficeSettings } from '@/lib/db';
 import { Employee, AttendanceRecord, OfficeSettings } from '@/types';
@@ -29,9 +30,21 @@ export default function AttendancePage() {
   const [currentDate, setCurrentDate] = useState('');
   const [settings, setSettings] = useState<OfficeSettings | null>(null);
 
+  // Selected Action Mode
+  const [selectedAction, setSelectedAction] = useState<'AUTO' | 'PERMISSION_OUT' | 'PERMISSION_IN'>('AUTO');
+  const [showReturnModal, setShowReturnModal] = useState(false);
+
   // Result States
   const [statusType, setStatusType] = useState<
-    'IDLE' | 'SUCCESS_CHECK_IN' | 'SUCCESS_CHECK_OUT' | 'ALREADY_COMPLETED' | 'NOT_FOUND' | 'INACTIVE' | 'LOCATION_ERROR'
+    | 'IDLE'
+    | 'SUCCESS_CHECK_IN'
+    | 'SUCCESS_CHECK_OUT'
+    | 'SUCCESS_PERMISSION_OUT'
+    | 'SUCCESS_PERMISSION_IN'
+    | 'ALREADY_COMPLETED'
+    | 'NOT_FOUND'
+    | 'INACTIVE'
+    | 'LOCATION_ERROR'
   >('IDLE');
   const [verifiedEmployee, setVerifiedEmployee] = useState<Employee | null>(null);
   const [attendanceRecord, setAttendanceRecord] = useState<AttendanceRecord | null>(null);
@@ -66,8 +79,11 @@ export default function AttendancePage() {
     }
   };
 
-  const handleVerifyAndMark = async (overrideId?: string) => {
-    const targetId = (overrideId || employeeId).trim().toUpperCase();
+  const handleExecuteAttendance = async (
+    actionToRun: 'AUTO' | 'CHECK_IN' | 'CHECK_OUT' | 'PERMISSION_OUT' | 'PERMISSION_IN',
+    willReturnToday = true
+  ) => {
+    const targetId = employeeId.trim().toUpperCase();
     if (!targetId) {
       setErrorMessage('Please enter your Employee ID (e.g. MT001)');
       setStatusType('NOT_FOUND');
@@ -76,7 +92,7 @@ export default function AttendancePage() {
 
     setLoading(true);
     setErrorMessage('');
-    setStatusType('IDLE');
+    setShowReturnModal(false);
     setVerifiedEmployee(null);
     setAttendanceRecord(null);
 
@@ -99,9 +115,12 @@ export default function AttendancePage() {
       const now = new Date();
       const localTime = formatTime12h(now);
       const localDateKey = getCurrentDateKey(now);
+
       const result = await verifyAndMarkAttendance(targetId, coords, {
         clientTime: localTime,
         clientDateKey: localDateKey,
+        action: actionToRun,
+        willReturnToday,
       });
 
       if (result.success) {
@@ -113,6 +132,12 @@ export default function AttendancePage() {
           triggerConfetti();
         } else if (result.type === 'CHECK_OUT') {
           setStatusType('SUCCESS_CHECK_OUT');
+          triggerConfetti();
+        } else if (result.type === 'PERMISSION_OUT') {
+          setStatusType('SUCCESS_PERMISSION_OUT');
+          triggerConfetti();
+        } else if (result.type === 'PERMISSION_IN') {
+          setStatusType('SUCCESS_PERMISSION_IN');
           triggerConfetti();
         }
       } else {
@@ -126,10 +151,13 @@ export default function AttendancePage() {
         if (result.type === 'ALREADY_COMPLETED') {
           setStatusType('ALREADY_COMPLETED');
           setErrorMessage(result.message);
-        } else if (result.message.includes('inactive')) {
+        } else if (result.message?.includes('inactive')) {
           setStatusType('INACTIVE');
           setErrorMessage(result.message);
-        } else if (result.message.includes('Outside Office Location') || result.message.includes('Location verification')) {
+        } else if (
+          result.message?.includes('Outside Office Location') ||
+          result.message?.includes('Location verification')
+        ) {
           setStatusType('LOCATION_ERROR');
           setErrorMessage(result.message);
         } else {
@@ -145,12 +173,31 @@ export default function AttendancePage() {
     }
   };
 
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!employeeId.trim()) {
+      setErrorMessage('Please enter your Employee ID (e.g. MT001)');
+      setStatusType('NOT_FOUND');
+      return;
+    }
+
+    if (selectedAction === 'PERMISSION_OUT') {
+      // Prompt if returning today or not
+      setShowReturnModal(true);
+      return;
+    }
+
+    handleExecuteAttendance(selectedAction);
+  };
+
   const handleReset = () => {
     setStatusType('IDLE');
     setVerifiedEmployee(null);
     setAttendanceRecord(null);
     setEmployeeId('');
     setErrorMessage('');
+    setSelectedAction('AUTO');
+    setShowReturnModal(false);
   };
 
   return (
@@ -186,7 +233,7 @@ export default function AttendancePage() {
             <span>{currentTime || '09:00 AM'}</span>
           </div>
           <p className="text-[10px] font-medium text-slate-400 mt-0.5 pr-1">
-            {currentDate || '07 September 2026'}
+            {currentDate || '11 September 2026'}
           </p>
         </div>
       </header>
@@ -194,7 +241,6 @@ export default function AttendancePage() {
       {/* Main Terminal Card */}
       <main className="max-w-md mx-auto w-full my-auto py-6 relative z-10">
         <div className="bg-white/95 backdrop-blur-xl border border-[#ebdcdc] rounded-3xl p-6 sm:p-8 shadow-[0_20px_50px_-10px_rgba(183,110,121,0.12)] relative overflow-hidden transition-all">
-          {/* Subtle Top Inner Rose Shimmer */}
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#c5838d]/40 to-transparent" />
 
           {/* STATE 1: IDLE / FORM */}
@@ -210,23 +256,54 @@ export default function AttendancePage() {
 
               <div className="space-y-1">
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold bg-[#fff5f5] text-[#8e4a55] border border-[#ecd2cf]">
-                  <Sparkles className="w-3 h-3 text-[#b76e79]" /> Office Attendance Terminal
+                  <Sparkles className="w-3 h-3 text-[#b76e79]" /> Office Attendance & Gate Pass
                 </span>
                 <h1 className="text-2xl font-black tracking-tight text-slate-900">
-                  Mark Your Attendance
+                  Mark Attendance / Permission
                 </h1>
                 <p className="text-xs text-slate-500 max-w-xs mx-auto">
-                  Enter your assigned Employee ID to verify registered face photo and record check-in / check-out.
+                  Enter your Employee ID to record Check-In, Check-Out, or Gate Pass Permission.
                 </p>
               </div>
 
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleVerifyAndMark();
-                }}
-                className="space-y-4 text-left"
-              >
+              {/* Action Selector Pills */}
+              <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-100 rounded-2xl text-[11px] font-bold">
+                <button
+                  type="button"
+                  onClick={() => setSelectedAction('AUTO')}
+                  className={`py-2 px-1 rounded-xl transition-all ${
+                    selectedAction === 'AUTO'
+                      ? 'bg-white text-[#8e4a55] shadow-xs font-black ring-1 ring-[#ebdcdc]'
+                      : 'text-slate-500 hover:text-slate-900'
+                  }`}
+                >
+                  Daily Attendance
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedAction('PERMISSION_OUT')}
+                  className={`py-2 px-1 rounded-xl transition-all ${
+                    selectedAction === 'PERMISSION_OUT'
+                      ? 'bg-amber-500 text-white shadow-xs font-black'
+                      : 'text-slate-500 hover:text-slate-900'
+                  }`}
+                >
+                  🚪 Permission Out
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedAction('PERMISSION_IN')}
+                  className={`py-2 px-1 rounded-xl transition-all ${
+                    selectedAction === 'PERMISSION_IN'
+                      ? 'bg-emerald-600 text-white shadow-xs font-black'
+                      : 'text-slate-500 hover:text-slate-900'
+                  }`}
+                >
+                  🔙 Permission In
+                </button>
+              </div>
+
+              <form onSubmit={handleFormSubmit} className="space-y-4 text-left">
                 <div>
                   <label
                     htmlFor="empIdInput"
@@ -255,12 +332,28 @@ export default function AttendancePage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-4 px-6 bg-gradient-to-r from-[#b76e79] via-[#c5838d] to-[#9e5762] hover:from-[#a8606b] hover:to-[#8c4651] active:scale-98 disabled:opacity-50 text-white rounded-2xl font-black text-xs uppercase tracking-wider shadow-lg shadow-[#b76e79]/25 flex items-center justify-center gap-2 transition-all cursor-pointer border border-[#e5b3b9]"
+                  className={`w-full py-4 px-6 rounded-2xl font-black text-xs uppercase tracking-wider shadow-lg flex items-center justify-center gap-2 transition-all cursor-pointer border text-white ${
+                    selectedAction === 'PERMISSION_OUT'
+                      ? 'bg-amber-500 hover:bg-amber-600 border-amber-400 shadow-amber-500/25'
+                      : selectedAction === 'PERMISSION_IN'
+                      ? 'bg-emerald-600 hover:bg-emerald-700 border-emerald-500 shadow-emerald-600/25'
+                      : 'bg-gradient-to-r from-[#b76e79] via-[#c5838d] to-[#9e5762] hover:from-[#a8606b] hover:to-[#8c4651] border-[#e5b3b9] shadow-[#b76e79]/25'
+                  }`}
                 >
                   {loading ? (
                     <>
                       <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span>Verifying Identity...</span>
+                      <span>Processing...</span>
+                    </>
+                  ) : selectedAction === 'PERMISSION_OUT' ? (
+                    <>
+                      <DoorOpen className="w-4 h-4" />
+                      <span>Record Permission Out</span>
+                    </>
+                  ) : selectedAction === 'PERMISSION_IN' ? (
+                    <>
+                      <LogIn className="w-4 h-4" />
+                      <span>Record Permission Return</span>
                     </>
                   ) : (
                     <>
@@ -272,10 +365,65 @@ export default function AttendancePage() {
               </form>
 
               {/* Quick Helper */}
-              <div className="pt-3 border-t border-[#f2e6e6] text-center">
+              <div className="pt-3 border-t border-[#f2e6e6] text-center space-y-1">
                 <p className="text-[11px] text-slate-400">
-                  First scan of the day records <strong>Check-In</strong> • Second scan records <strong>Check-Out</strong>
+                  1st scan: <strong>Check-In</strong> • 2nd scan: <strong>Check-Out</strong>
                 </p>
+                <p className="text-[10px] text-amber-700 font-semibold">
+                  Taking permission? Select <strong>Permission Out</strong> above.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* PERMISSION RETURN CONFIRMATION MODAL */}
+          {showReturnModal && (
+            <div className="space-y-5 text-center animate-in fade-in zoom-in duration-200">
+              <div className="w-16 h-16 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 mx-auto shadow-xs">
+                <HelpCircle className="w-8 h-8" />
+              </div>
+
+              <div className="space-y-1">
+                <h2 className="text-xl font-black text-slate-900">Are you returning today?</h2>
+                <p className="text-xs text-slate-500">
+                  Employee <span className="font-bold text-slate-800">{employeeId}</span> is taking a permission.
+                </p>
+              </div>
+
+              <div className="space-y-3 pt-2">
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => handleExecuteAttendance('PERMISSION_OUT', true)}
+                  className="w-full p-4 bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white rounded-2xl font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
+                >
+                  <DoorOpen className="w-4 h-4" />
+                  <div className="text-left">
+                    <p className="font-black">Yes, I will return later today</p>
+                    <p className="text-[10px] opacity-85 font-normal">Records Permission Out (Gate Pass)</p>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => handleExecuteAttendance('PERMISSION_OUT', false)}
+                  className="w-full p-4 bg-rose-600 hover:bg-rose-700 active:scale-98 text-white rounded-2xl font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-rose-600/20 transition-all cursor-pointer"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <div className="text-left">
+                    <p className="font-black">No, leaving for the day</p>
+                    <p className="text-[10px] opacity-85 font-normal">Directly marks final Check-Out</p>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowReturnModal(false)}
+                  className="text-xs font-semibold text-slate-400 hover:text-slate-600 pt-2"
+                >
+                  Cancel & Go Back
+                </button>
               </div>
             </div>
           )}
@@ -288,7 +436,6 @@ export default function AttendancePage() {
                 <span>Attendance Verified</span>
               </div>
 
-              {/* Registered Employee Photo with Rose Gold Ring */}
               <div className="relative mx-auto w-28 h-28 rounded-full ring-4 ring-[#e8c3b9] shadow-xl overflow-hidden bg-slate-100">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -421,12 +568,109 @@ export default function AttendancePage() {
             </div>
           )}
 
-          {/* STATE 4: ALREADY COMPLETED */}
+          {/* STATE 4: SUCCESS PERMISSION OUT */}
+          {statusType === 'SUCCESS_PERMISSION_OUT' && verifiedEmployee && attendanceRecord && (
+            <div className="text-center space-y-5 animate-in fade-in zoom-in duration-300">
+              <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold">
+                <DoorOpen className="w-4 h-4 text-amber-600" />
+                <span>Permission Out Recorded (Gate Pass)</span>
+              </div>
+
+              <div className="relative mx-auto w-28 h-28 rounded-full ring-4 ring-amber-200 shadow-xl overflow-hidden bg-slate-100">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={verifiedEmployee.photoUrl}
+                  alt={verifiedEmployee.name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+
+              <div>
+                <h2 className="text-2xl font-black text-slate-900">{verifiedEmployee.name}</h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {verifiedEmployee.employeeId} • {verifiedEmployee.department}
+                </p>
+              </div>
+
+              <div className="bg-amber-50/70 border border-amber-200 rounded-2xl p-4 space-y-2 text-xs text-amber-900">
+                <p className="font-bold">Gate Pass Permission Active</p>
+                <div className="bg-white p-3 rounded-xl border border-amber-100 flex items-center justify-between">
+                  <span className="text-slate-500">Permission Out Time:</span>
+                  <span className="font-mono font-bold text-amber-800">{attendanceRecord.permissionOutTime}</span>
+                </div>
+                <p className="text-[11px] text-slate-500 pt-1">
+                  Please scan again when returning to record <strong>Permission In</strong>.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleReset}
+                className="w-full py-3 bg-[#fff5f5] hover:bg-[#fae8e8] text-[#8e4a55] border border-[#ecd2cf] rounded-xl text-xs font-bold transition-colors"
+              >
+                Done • Mark Another Employee
+              </button>
+            </div>
+          )}
+
+          {/* STATE 5: SUCCESS PERMISSION IN */}
+          {statusType === 'SUCCESS_PERMISSION_IN' && verifiedEmployee && attendanceRecord && (
+            <div className="text-center space-y-5 animate-in fade-in zoom-in duration-300">
+              <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold">
+                <LogIn className="w-4 h-4 text-emerald-600" />
+                <span>Welcome Back • Permission In Recorded</span>
+              </div>
+
+              <div className="relative mx-auto w-28 h-28 rounded-full ring-4 ring-emerald-200 shadow-xl overflow-hidden bg-slate-100">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={verifiedEmployee.photoUrl}
+                  alt={verifiedEmployee.name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+
+              <div>
+                <h2 className="text-2xl font-black text-slate-900">{verifiedEmployee.name}</h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {verifiedEmployee.employeeId} • {verifiedEmployee.department}
+                </p>
+              </div>
+
+              <div className="bg-emerald-50/70 border border-emerald-200 rounded-2xl p-4 space-y-2 text-xs text-emerald-900">
+                <p className="font-bold">Permission Completed</p>
+                <div className="grid grid-cols-3 gap-2 bg-white p-3 rounded-xl border border-emerald-100 text-left">
+                  <div>
+                    <p className="text-[10px] text-slate-400 font-semibold">Out Time</p>
+                    <p className="font-mono font-bold text-slate-800 text-xs">{attendanceRecord.permissionOutTime}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-slate-400 font-semibold">In Time</p>
+                    <p className="font-mono font-bold text-emerald-700 text-xs">{attendanceRecord.permissionInTime}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-slate-400 font-semibold">Duration</p>
+                    <p className="font-mono font-bold text-amber-700 text-xs">{attendanceRecord.permissionDuration}</p>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleReset}
+                className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-colors shadow-md shadow-emerald-600/20"
+              >
+                Done • Back to Terminal
+              </button>
+            </div>
+          )}
+
+          {/* STATE 6: ALREADY COMPLETED */}
           {statusType === 'ALREADY_COMPLETED' && (
             <div className="text-center space-y-5 animate-in fade-in zoom-in duration-300">
               <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold">
                 <Clock className="w-4 h-4 text-amber-600" />
-                <span>Already Checked In</span>
+                <span>Attendance Completed</span>
               </div>
 
               {verifiedEmployee && (
@@ -456,6 +700,12 @@ export default function AttendancePage() {
                       <strong>Check-In Time:</strong>{' '}
                       <span className="text-slate-900 font-mono font-bold">{attendanceRecord.checkInTime}</span>
                     </p>
+                    {attendanceRecord.permissionDuration && (
+                      <p>
+                        <strong>Permission Away:</strong>{' '}
+                        <span className="text-amber-700 font-mono font-bold">{attendanceRecord.permissionDuration}</span>
+                      </p>
+                    )}
                     {attendanceRecord.checkOutTime && (
                       <p>
                         <strong>Check-Out Time:</strong>{' '}
@@ -472,9 +722,6 @@ export default function AttendancePage() {
                     )}
                   </div>
                 )}
-                <p className="text-[11px] text-slate-500 pt-1">
-                  Duplicate records are protected automatically.
-                </p>
               </div>
 
               <button
@@ -487,7 +734,7 @@ export default function AttendancePage() {
             </div>
           )}
 
-          {/* STATE 5: NOT FOUND */}
+          {/* STATE 7: NOT FOUND */}
           {statusType === 'NOT_FOUND' && (
             <div className="text-center space-y-5 animate-in fade-in zoom-in duration-300">
               <div className="w-16 h-16 rounded-full bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600 mx-auto shadow-xs">
@@ -502,7 +749,7 @@ export default function AttendancePage() {
               </div>
 
               <div className="bg-rose-50/80 border border-rose-200 rounded-2xl p-4 text-xs text-rose-800">
-                <p>Please enter a valid Employee ID or contact the M Technovate Solutions administrator.</p>
+                <p>Please enter a valid Employee ID or contact the administrator.</p>
                 <p className="mt-2 font-mono text-slate-500">
                   Entered ID: <span className="text-rose-700 font-bold">{employeeId || 'None'}</span>
                 </p>
@@ -518,7 +765,7 @@ export default function AttendancePage() {
             </div>
           )}
 
-          {/* STATE 6: INACTIVE */}
+          {/* STATE 8: INACTIVE */}
           {statusType === 'INACTIVE' && (
             <div className="text-center space-y-5 animate-in fade-in zoom-in duration-300">
               <div className="w-16 h-16 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 mx-auto shadow-xs">
@@ -532,29 +779,6 @@ export default function AttendancePage() {
                 </p>
               </div>
 
-              {verifiedEmployee && (
-                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200 text-left">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={verifiedEmployee.photoUrl}
-                    alt={verifiedEmployee.name}
-                    className="w-12 h-12 rounded-full object-cover border border-slate-300"
-                  />
-                  <div>
-                    <p className="text-sm font-bold text-slate-900">{verifiedEmployee.name}</p>
-                    <p className="text-xs text-slate-500">
-                      {verifiedEmployee.employeeId} • {verifiedEmployee.department}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              <div className="bg-amber-50/80 border border-amber-200 rounded-2xl p-4 text-xs text-amber-900">
-                <p>
-                  Please contact the administrator to reactivate your account before marking attendance.
-                </p>
-              </div>
-
               <button
                 type="button"
                 onClick={handleReset}
@@ -565,7 +789,7 @@ export default function AttendancePage() {
             </div>
           )}
 
-          {/* STATE 7: LOCATION ERROR */}
+          {/* STATE 9: LOCATION ERROR */}
           {statusType === 'LOCATION_ERROR' && (
             <div className="text-center space-y-5 animate-in fade-in zoom-in duration-300">
               <div className="w-16 h-16 rounded-full bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600 mx-auto">

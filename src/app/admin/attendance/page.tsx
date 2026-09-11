@@ -6,21 +6,17 @@ import Navbar from '@/components/Navbar';
 import QRCodeModal from '@/components/QRCodeModal';
 import FirebaseSettingsModal from '@/components/FirebaseSettingsModal';
 import {
-  CalendarCheck,
-  Search,
   Download,
-  Filter,
+  Search,
   ArrowLeft,
-  Calendar,
-  Clock,
-  UserCheck,
-  Building,
   RefreshCw,
+  Mail,
+  DoorOpen,
 } from 'lucide-react';
-import { getAllAttendance, getEmployees } from '@/lib/db';
-import { AttendanceRecord, Employee } from '@/types';
+import { getAllAttendance, getEmployees, sendDailyAttendanceReport, getOfficeSettings } from '@/lib/db';
+import { AttendanceRecord, Employee, OfficeSettings } from '@/types';
 import { getStoredAdmin } from '@/lib/auth';
-import { getCurrentDateKey, formatDisplayDate } from '@/lib/dateUtils';
+import { getCurrentDateKey } from '@/lib/dateUtils';
 import Link from 'next/link';
 
 export default function AttendanceHistoryPage() {
@@ -28,6 +24,7 @@ export default function AttendanceHistoryPage() {
   const [loading, setLoading] = useState(true);
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [settings, setSettings] = useState<OfficeSettings | null>(null);
 
   // Filters
   const [selectedDate, setSelectedDate] = useState<string>(''); // empty means all dates
@@ -36,6 +33,10 @@ export default function AttendanceHistoryPage() {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [isQRModalOpen, setIsQRModalOpen] = useState(false);
   const [isFirebaseModalOpen, setIsFirebaseModalOpen] = useState(false);
+
+  // Email state
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [emailStatusMessage, setEmailStatusMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!getStoredAdmin()) {
@@ -46,9 +47,14 @@ export default function AttendanceHistoryPage() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [allAtt, allEmps] = await Promise.all([getAllAttendance(), getEmployees()]);
+      const [allAtt, allEmps, setts] = await Promise.all([
+        getAllAttendance(),
+        getEmployees(),
+        getOfficeSettings(),
+      ]);
       setRecords(allAtt);
       setEmployees(allEmps);
+      setSettings(setts);
     } catch (e) {
       console.error('Error loading attendance history:', e);
     } finally {
@@ -59,6 +65,20 @@ export default function AttendanceHistoryPage() {
   useEffect(() => {
     loadData();
   }, []);
+
+  const handleSendDailyReport = async () => {
+    setSendingEmail(true);
+    setEmailStatusMessage(null);
+    try {
+      const res = await sendDailyAttendanceReport(settings?.ownerEmail);
+      setEmailStatusMessage(res.message || (res.success ? 'Report sent successfully!' : 'Failed to send'));
+    } catch (err: unknown) {
+      setEmailStatusMessage(err instanceof Error ? err.message : 'Error sending email');
+    } finally {
+      setSendingEmail(false);
+      setTimeout(() => setEmailStatusMessage(null), 5000);
+    }
+  };
 
   const departments = Array.from(new Set(employees.map((e) => e.department))).filter(Boolean);
 
@@ -76,6 +96,7 @@ export default function AttendanceHistoryPage() {
     const matchesStatus =
       statusFilter === 'ALL' ||
       (statusFilter === 'CHECKED_OUT' && Boolean(rec.checkOutTime)) ||
+      (statusFilter === 'ON_PERMISSION' && rec.permissionStatus === 'OUT_ON_PERMISSION' && !rec.permissionInTime) ||
       rec.status === statusFilter;
 
     return matchesDate && matchesSearch && matchesDept && matchesStatus;
@@ -95,6 +116,9 @@ export default function AttendanceHistoryPage() {
       'Employee Name',
       'Department',
       'Check-In Time',
+      'Permission Out',
+      'Permission In',
+      'Permission Duration',
       'Check-Out Time',
       'Total Working Hours',
       'Status',
@@ -107,6 +131,9 @@ export default function AttendanceHistoryPage() {
       `"${r.employeeName}"`,
       `"${r.department}"`,
       `"${r.checkInTime}"`,
+      `"${r.permissionOutTime || '-'}"`,
+      `"${r.permissionInTime || '-'}"`,
+      `"${r.permissionDuration || '-'}"`,
       `"${r.checkOutTime || '-'}"`,
       `"${r.totalHours || '-'}"`,
       `"${r.status}"`,
@@ -145,10 +172,10 @@ export default function AttendanceHistoryPage() {
             </Link>
             <div>
               <h1 className="text-2xl font-black text-slate-900 tracking-tight">
-                Attendance History
+                Attendance & Permission History
               </h1>
               <p className="text-xs text-slate-500 mt-0.5">
-                Comprehensive log of daily employee check-ins, check-outs, and working hours
+                Comprehensive log of daily check-ins, permissions (gate pass), check-outs, and working hours
               </p>
             </div>
           </div>
@@ -165,14 +192,32 @@ export default function AttendanceHistoryPage() {
 
             <button
               type="button"
+              disabled={sendingEmail}
+              onClick={handleSendDailyReport}
+              className="flex items-center justify-center gap-2 px-3.5 py-2.5 bg-[#b76e79] hover:bg-[#a0636d] text-white rounded-xl text-xs font-bold shadow-xs transition-colors active:scale-95 whitespace-nowrap disabled:opacity-50 cursor-pointer"
+              title="Email Daily Report to Owner"
+            >
+              <Mail className="w-4 h-4" />
+              <span>{sendingEmail ? 'Sending...' : 'Email Report to Owner'}</span>
+            </button>
+
+            <button
+              type="button"
               onClick={handleExportCSV}
-              className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors active:scale-95 whitespace-nowrap"
+              className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors active:scale-95 whitespace-nowrap cursor-pointer"
             >
               <Download className="w-4 h-4" />
               <span>Export CSV / Excel</span>
             </button>
           </div>
         </div>
+
+        {emailStatusMessage && (
+          <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-900 font-semibold flex items-center justify-between">
+            <span>{emailStatusMessage}</span>
+            <button onClick={() => setEmailStatusMessage(null)} className="text-blue-500 hover:text-blue-800 text-[11px]">Dismiss</button>
+          </div>
+        )}
 
         {/* Filter Controls Bar */}
         <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs space-y-4">
@@ -248,7 +293,8 @@ export default function AttendanceHistoryPage() {
               >
                 <option value="ALL">All Statuses</option>
                 <option value="Present">Present</option>
-                <option value="Late">Late</option>
+                <option value="Late">Late Arrival</option>
+                <option value="ON_PERMISSION">On Permission (Gate Pass)</option>
                 <option value="CHECKED_OUT">Checked Out Only</option>
               </select>
             </div>
@@ -310,31 +356,41 @@ export default function AttendanceHistoryPage() {
 
                       <span
                         className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${
-                          rec.status === 'Present'
+                          rec.permissionStatus === 'OUT_ON_PERMISSION' && !rec.permissionInTime
+                            ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                            : rec.status === 'Present'
                             ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                             : rec.status === 'Late'
                             ? 'bg-amber-50 text-amber-700 border border-amber-200'
                             : 'bg-slate-100 text-slate-700'
                         }`}
                       >
-                        {rec.checkOutTime ? 'Checked Out' : rec.status}
+                        {rec.checkOutTime
+                          ? 'Checked Out'
+                          : rec.permissionStatus === 'OUT_ON_PERMISSION' && !rec.permissionInTime
+                          ? 'On Permission'
+                          : rec.status}
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-1.5 bg-slate-50 p-2.5 rounded-xl text-center text-xs border border-slate-100">
+                    <div className="grid grid-cols-4 gap-1.5 bg-slate-50 p-2.5 rounded-xl text-center text-[11px] border border-slate-100">
                       <div>
                         <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">In</p>
                         <p className="font-mono font-bold text-emerald-600 mt-0.5">{rec.checkInTime}</p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Perm Out</p>
+                        <p className="font-mono font-bold text-amber-700 mt-0.5">{rec.permissionOutTime || '-'}</p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Perm In</p>
+                        <p className="font-mono font-bold text-emerald-700 mt-0.5">{rec.permissionInTime || '-'}</p>
                       </div>
                       <div>
                         <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Out</p>
                         <p className="font-mono font-bold text-slate-700 mt-0.5">
                           {rec.checkOutTime || <span className="text-slate-400 font-normal italic">Active</span>}
                         </p>
-                      </div>
-                      <div>
-                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Duration</p>
-                        <p className="font-mono font-bold text-blue-600 mt-0.5">{rec.totalHours || '—'}</p>
                       </div>
                     </div>
                   </div>
@@ -345,7 +401,7 @@ export default function AttendanceHistoryPage() {
 
           {/* 2. Desktop Table View (Screen >= sm) */}
           <div className="hidden sm:block overflow-x-auto">
-            <table className="w-full text-left text-xs min-w-[700px]">
+            <table className="w-full text-left text-xs min-w-[850px]">
               <thead className="bg-slate-50/80 text-slate-600 font-bold uppercase tracking-wider text-[10px] border-b border-slate-100">
                 <tr>
                   <th className="py-3.5 px-4 sm:px-6">Date</th>
@@ -353,6 +409,7 @@ export default function AttendanceHistoryPage() {
                   <th className="py-3.5 px-4">Employee Name</th>
                   <th className="py-3.5 px-4">Department</th>
                   <th className="py-3.5 px-4">Check-In</th>
+                  <th className="py-3.5 px-4">Permission (Out / In)</th>
                   <th className="py-3.5 px-4">Check-Out</th>
                   <th className="py-3.5 px-4">Total Hours</th>
                   <th className="py-3.5 px-4 sm:px-6 text-right">Status</th>
@@ -361,13 +418,13 @@ export default function AttendanceHistoryPage() {
               <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
                 {loading ? (
                   <tr>
-                    <td colSpan={8} className="py-12 text-center text-slate-400">
+                    <td colSpan={9} className="py-12 text-center text-slate-400">
                       Loading attendance records...
                     </td>
                   </tr>
                 ) : filteredRecords.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-12 text-center text-slate-400">
+                    <td colSpan={9} className="py-12 text-center text-slate-400">
                       No attendance records found matching filters.
                     </td>
                   </tr>
@@ -393,6 +450,25 @@ export default function AttendanceHistoryPage() {
                         {rec.checkInTime}
                       </td>
 
+                      <td className="py-3.5 px-4">
+                        {rec.permissionOutTime ? (
+                          <div className="font-mono text-xs">
+                            <span className="text-amber-700 font-bold">{rec.permissionOutTime}</span>
+                            <span className="text-slate-400 mx-1">→</span>
+                            {rec.permissionInTime ? (
+                              <span className="text-emerald-700 font-bold">{rec.permissionInTime}</span>
+                            ) : (
+                              <span className="text-amber-600 font-semibold italic text-[11px]">(Out)</span>
+                            )}
+                            {rec.permissionDuration && (
+                              <span className="text-[10px] text-slate-500 block">({rec.permissionDuration})</span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-slate-300 font-mono">—</span>
+                        )}
+                      </td>
+
                       <td className="py-3.5 px-4 font-mono text-slate-700">
                         {rec.checkOutTime ? (
                           <span className="font-bold text-cyan-600">{rec.checkOutTime}</span>
@@ -408,14 +484,20 @@ export default function AttendanceHistoryPage() {
                       <td className="py-3.5 px-4 sm:px-6 text-right">
                         <span
                           className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold ${
-                            rec.status === 'Present'
+                            rec.permissionStatus === 'OUT_ON_PERMISSION' && !rec.permissionInTime
+                              ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                              : rec.status === 'Present'
                               ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                               : rec.status === 'Late'
                               ? 'bg-amber-50 text-amber-700 border border-amber-200'
                               : 'bg-slate-100 text-slate-700'
                           }`}
                         >
-                          {rec.status}
+                          {rec.checkOutTime
+                            ? 'Checked Out'
+                            : rec.permissionStatus === 'OUT_ON_PERMISSION' && !rec.permissionInTime
+                            ? 'On Permission'
+                            : rec.status}
                         </span>
                       </td>
                     </tr>

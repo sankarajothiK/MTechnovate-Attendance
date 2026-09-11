@@ -119,6 +119,13 @@ export default function AdminDashboard() {
         record: rec,
       };
     }
+    if (rec.permissionStatus === 'OUT_ON_PERMISSION' && !rec.permissionInTime) {
+      return {
+        text: `On Permission (${rec.permissionOutTime || ''})`,
+        color: 'bg-amber-100 text-amber-800 border-amber-300',
+        record: rec,
+      };
+    }
     if (rec.status === 'Late') {
       return {
         text: `Late (${rec.checkInTime})`,

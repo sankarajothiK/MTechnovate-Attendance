@@ -595,14 +595,40 @@ export async function syncAllToFirebase(): Promise<{ success: boolean; employees
 
 // --- ATTENDANCE VERIFICATION FLOW ---
 
+export async function sendDailyAttendanceReport(recipientEmail?: string): Promise<{ success: boolean; message: string; mailSent?: boolean; error?: string }> {
+  try {
+    const res = await fetch('/api/attendance/send-report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ recipientEmail }),
+    });
+    return await res.json();
+  } catch (err: unknown) {
+    return {
+      success: false,
+      message: 'Failed to trigger report',
+      error: err instanceof Error ? err.message : 'Network error',
+    };
+  }
+}
+
 export async function verifyAndMarkAttendance(
   employeeIdInput: string,
   userCoords?: { latitude: number; longitude: number },
-  clientOptions?: { clientTime?: string; clientDateKey?: string }
+  clientOptions?: {
+    clientTime?: string;
+    clientDateKey?: string;
+    action?: 'CHECK_IN' | 'CHECK_OUT' | 'PERMISSION_OUT' | 'PERMISSION_IN' | 'AUTO';
+    willReturnToday?: boolean;
+    permissionReason?: string;
+  }
 ): Promise<VerificationResult> {
   const cleanId = employeeIdInput.trim().toUpperCase();
   const clientTime = clientOptions?.clientTime || formatTime12h();
   const clientDateKey = clientOptions?.clientDateKey || getCurrentDateKey();
+  const action = clientOptions?.action || 'AUTO';
+  const willReturnToday = clientOptions?.willReturnToday !== false;
+  const permissionReason = clientOptions?.permissionReason || '';
 
   // 1. Browser client: call server API endpoint
   if (typeof window !== 'undefined') {
@@ -615,6 +641,9 @@ export async function verifyAndMarkAttendance(
           userCoords,
           clientTime,
           clientDateKey,
+          action,
+          willReturnToday,
+          permissionReason,
         }),
       });
       const json = await res.json();
