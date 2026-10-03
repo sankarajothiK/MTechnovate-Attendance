@@ -1,6 +1,6 @@
 export interface Employee {
   id: string;
-  employeeId: string; // MT001, MT002, etc. (Unique)
+  employeeId: string; // M0001, M0002, etc. (Unique)
   name: string;
   photoUrl: string;
   department: string;

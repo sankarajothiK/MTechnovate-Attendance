@@ -196,9 +196,9 @@ export default function QRCodeModal({ isOpen, onClose }: QRCodeModalProps) {
                 <span className="w-6 h-6 rounded-full bg-cyan-600 text-white font-bold text-xs flex items-center justify-center">
                   2
                 </span>
-                <p className="font-bold text-xs text-slate-200">Enter MT ID</p>
+                <p className="font-bold text-xs text-slate-200">Enter Employee ID</p>
                 <p className="text-[11px] text-slate-400">
-                  Enter your registered ID (e.g. <strong className="text-cyan-300">MT001</strong>)
+                  Enter your registered ID (e.g. <strong className="text-cyan-300">M0001</strong>)
                 </p>
               </div>
 

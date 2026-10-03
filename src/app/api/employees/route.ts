@@ -19,7 +19,7 @@ export async function GET() {
         employees.push(data);
       }
     });
-    // Sort by employee ID MT001, MT002...
+    // Sort by employee ID M0001, M0002...
     employees.sort((a, b) => a.employeeId.localeCompare(b.employeeId));
     return NextResponse.json({ success: true, employees });
   } catch (error: unknown) {

@@ -160,7 +160,7 @@ export default function EmployeesPage() {
             <div className="relative w-full sm:w-64">
               <input
                 type="text"
-                placeholder="Search by name, MT ID, title..."
+                placeholder="Search by name, ID (e.g. M0001), title..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-9 pr-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"

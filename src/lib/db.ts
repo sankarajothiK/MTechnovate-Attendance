@@ -173,7 +173,7 @@ export async function getEmployeeByEmployeeId(empId: string): Promise<Employee |
 
 /**
  * Automatically computes the next sequential Employee ID:
- * MT001 -> MT002 -> MT003...
+ * M0001 -> M0002 -> M0003...
  * Checks database to prevent duplicate IDs.
  */
 export async function getNextEmployeeId(): Promise<string> {
@@ -181,7 +181,7 @@ export async function getNextEmployeeId(): Promise<string> {
   let maxNumber = 0;
 
   for (const emp of employees) {
-    const match = emp.employeeId.match(/^MT(\d+)$/i);
+    const match = emp.employeeId.match(/^M(\d+)$/i);
     if (match) {
       const num = parseInt(match[1], 10);
       if (!isNaN(num) && num > maxNumber) {
@@ -191,8 +191,8 @@ export async function getNextEmployeeId(): Promise<string> {
   }
 
   const nextNum = maxNumber + 1;
-  const padded = String(nextNum).padStart(3, '0');
-  return `MT${padded}`;
+  const padded = String(nextNum).padStart(4, '0');
+  return `M${padded}`;
 }
 
 export async function createEmployee(

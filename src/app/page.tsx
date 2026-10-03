@@ -127,7 +127,7 @@ export default function HomePage() {
                   Employee Attendance Terminal
                 </h3>
                 <p className="text-xs text-slate-500 mt-2 leading-relaxed">
-                  The mobile-friendly terminal opened after scanning the office QR code. Enter MT ID to verify registered photo and mark attendance instantly.
+                  The mobile-friendly terminal opened after scanning the office QR code. Enter Employee ID (e.g. M0001) to verify registered photo and mark attendance instantly.
                 </p>
               </div>
             </div>
@@ -156,7 +156,7 @@ export default function HomePage() {
                   Admin Dashboard
                 </h3>
                 <p className="text-xs text-slate-500 mt-2 leading-relaxed">
-                  Auto-generate sequential MT IDs, upload employee photos, monitor today&apos;s attendance, print entrance QR posters, and export CSV reports.
+                  Auto-generate sequential IDs (M0001...), upload employee photos, monitor today&apos;s attendance, print entrance QR posters, and export CSV reports.
                 </p>
               </div>
             </div>
@@ -172,8 +172,8 @@ export default function HomePage() {
         <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 max-w-4xl mx-auto pt-6 text-left text-xs">
           <div className="p-4 rounded-2xl bg-white border border-[#ebdcdc] shadow-xs space-y-1">
             <Users className="w-4 h-4 text-[#b76e79]" />
-            <p className="font-bold text-slate-900">Sequential MT IDs</p>
-            <p className="text-[11px] text-slate-500">Auto MT001, MT002 with zero duplicate IDs</p>
+            <p className="font-bold text-slate-900">Sequential Employee IDs</p>
+            <p className="text-[11px] text-slate-500">Auto M0001, M0002 with zero duplicate IDs</p>
           </div>
 
           <div className="p-4 rounded-2xl bg-white border border-[#ebdcdc] shadow-xs space-y-1">

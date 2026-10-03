@@ -83,7 +83,7 @@ export default function AddEmployeeModal({
         })
         .catch((err) => {
           console.error(err);
-          setEmployeeId('MT001');
+          setEmployeeId('M0001');
         })
         .finally(() => setLoadingId(false));
     }

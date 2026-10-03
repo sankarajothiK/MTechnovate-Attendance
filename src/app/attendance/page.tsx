@@ -85,7 +85,7 @@ export default function AttendancePage() {
   ) => {
     const targetId = employeeId.trim().toUpperCase();
     if (!targetId) {
-      setErrorMessage('Please enter your Employee ID (e.g. MT001)');
+      setErrorMessage('Please enter your Employee ID (e.g. M0001)');
       setStatusType('NOT_FOUND');
       return;
     }
@@ -176,7 +176,7 @@ export default function AttendancePage() {
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!employeeId.trim()) {
-      setErrorMessage('Please enter your Employee ID (e.g. MT001)');
+      setErrorMessage('Please enter your Employee ID (e.g. M0001)');
       setStatusType('NOT_FOUND');
       return;
     }
@@ -318,13 +318,13 @@ export default function AttendancePage() {
                       required
                       autoFocus
                       maxLength={10}
-                      placeholder="e.g. MT001"
+                      placeholder="e.g. M0001"
                       value={employeeId}
                       onChange={(e) => setEmployeeId(e.target.value.toUpperCase())}
                       className="w-full px-4 py-3.5 bg-[#fdfbfb] border-2 border-[#ebdcdc] hover:border-[#c5838d] focus:border-[#b76e79] focus:ring-4 focus:ring-[#b76e79]/15 rounded-2xl font-mono text-lg font-black text-slate-900 tracking-widest placeholder:text-slate-400 placeholder:font-sans placeholder:font-normal placeholder:text-sm focus:outline-none transition-all shadow-inner"
                     />
                     <span className="absolute right-3.5 top-3.5 px-2.5 py-1 rounded-lg bg-[#fff5f5] text-[#8e4a55] border border-[#ecd2cf] text-xs font-mono font-bold">
-                      MT
+                      M
                     </span>
                   </div>
                 </div>
