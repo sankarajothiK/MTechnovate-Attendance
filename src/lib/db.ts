@@ -117,10 +117,28 @@ export async function getEmployees(): Promise<Employee[]> {
       if (res.ok) {
         const json = await res.json();
         if (json.success && Array.isArray(json.employees)) {
-          const clean = deduplicateEmployees(json.employees);
-          setLocalStore(EMPLOYEES_STORAGE_KEY, clean);
-          memEmployees = clean;
-          return clean;
+          // IMPORTANT: Merge with local employees so any locally saved employees are NOT lost!
+          const local = getLocalStore<Employee[]>(EMPLOYEES_STORAGE_KEY, memEmployees);
+          const merged = deduplicateEmployees([...json.employees, ...local]);
+          setLocalStore(EMPLOYEES_STORAGE_KEY, merged);
+          memEmployees = merged;
+
+          // Check if there are local employees missing in the cloud, and attempt auto-sync
+          const missingInCloud = local.filter(
+            (l) => !json.employees.some((re: Employee) => re.employeeId.toUpperCase() === l.employeeId.toUpperCase())
+          );
+          if (missingInCloud.length > 0) {
+            console.log(`Auto-sync: pushing ${missingInCloud.length} local employee(s) to cloud...`);
+            missingInCloud.forEach((emp) => {
+              fetch('/api/employees', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(emp),
+              }).catch((e) => console.warn('Auto-sync error for emp:', emp.employeeId, e));
+            });
+          }
+
+          return merged;
         }
       }
     } catch (err) {
@@ -144,7 +162,8 @@ export async function getEmployees(): Promise<Employee[]> {
           emps.push(data);
         }
       });
-      const clean = deduplicateEmployees(emps);
+      const local = getLocalStore<Employee[]>(EMPLOYEES_STORAGE_KEY, memEmployees);
+      const clean = deduplicateEmployees([...emps, ...local]);
       setLocalStore(EMPLOYEES_STORAGE_KEY, clean);
       memEmployees = clean;
       return clean;
@@ -197,7 +216,7 @@ export async function getNextEmployeeId(): Promise<string> {
 
 export async function createEmployee(
   data: Omit<Employee, 'id' | 'createdAt'>
-): Promise<{ success: boolean; employee?: Employee; error?: string }> {
+): Promise<{ success: boolean; employee?: Employee; error?: string; savedLocallyOnly?: boolean }> {
   const formattedId = data.employeeId.trim().toUpperCase();
 
   // 1. Browser client: call server API
@@ -216,7 +235,31 @@ export async function createEmployee(
         memEmployees = updated;
         return { success: true, employee: json.employee };
       } else {
-        return { success: false, error: json.error || 'Failed to create employee' };
+        const errorMsg = json.error || 'Failed to create employee';
+        const isPermission =
+          errorMsg.toLowerCase().includes('permission') ||
+          errorMsg.toLowerCase().includes('denied');
+
+        // Save locally as safety backup so entered data is not lost
+        const localEmp: Employee = {
+          ...data,
+          id: `emp-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+          employeeId: formattedId,
+          createdAt: new Date().toISOString(),
+        };
+        const current = getLocalStore<Employee[]>(EMPLOYEES_STORAGE_KEY, memEmployees);
+        const updated = deduplicateEmployees([...current, localEmp]);
+        setLocalStore(EMPLOYEES_STORAGE_KEY, updated);
+        memEmployees = updated;
+
+        return {
+          success: false,
+          error: isPermission
+            ? 'Firebase Cloud Firestore security rules have expired or blocked write access. Employee saved in local browser, but will not appear on other devices until rules are updated in Firebase Console.'
+            : errorMsg,
+          savedLocallyOnly: true,
+          employee: localEmp,
+        };
       }
     } catch (err) {
       console.warn('API createEmployee failed, falling back to direct Firestore:', err);
@@ -247,6 +290,8 @@ export async function createEmployee(
     createdAt: new Date().toISOString(),
   };
 
+  let writeSuccess = false;
+  let writeError = '';
   const db = getFirestoreDb();
   if (db) {
     try {
@@ -256,14 +301,26 @@ export async function createEmployee(
         'setDoc employee'
       );
       console.log('Firebase: Successfully created employee', newEmployee.employeeId);
-    } catch (e) {
+      writeSuccess = true;
+    } catch (e: unknown) {
+      const err = e as { message?: string; code?: string };
       console.warn('Firebase setDoc failed or timed out for employee:', e);
+      writeError = err.message || 'Firestore write error';
     }
   }
 
   const updated = deduplicateEmployees([...allEmployees, newEmployee]);
   setLocalStore(EMPLOYEES_STORAGE_KEY, updated);
   memEmployees = updated;
+
+  if (db && !writeSuccess) {
+    return {
+      success: false,
+      error: `Cloud write failed: ${writeError}. Saved locally on this browser.`,
+      savedLocallyOnly: true,
+      employee: newEmployee,
+    };
+  }
 
   return { success: true, employee: newEmployee };
 }
@@ -542,45 +599,97 @@ export async function updateOfficeSettings(updates: Partial<OfficeSettings>): Pr
 // --- SYNC TO FIREBASE (1-CLICK SYNC ALL DATA) ---
 
 export async function syncAllToFirebase(): Promise<{ success: boolean; employeesSynced: number; attendanceSynced: number; error?: string }> {
-  const db = getFirestoreDb();
-  if (!db) {
-    return { success: false, employeesSynced: 0, attendanceSynced: 0, error: 'Firebase is not connected or configured.' };
-  }
-
   try {
     const emps = await getEmployees();
     const atts = await getAllAttendance();
     const setts = await getOfficeSettings();
 
+    let empSuccess = 0;
+    let attSuccess = 0;
+    let syncError = '';
+
     // 1. Sync Employees
     for (const emp of emps) {
-      await runWithTimeout(
-        setDoc(doc(db, 'employees', emp.employeeId), emp),
-        6000,
-        `sync emp ${emp.employeeId}`
-      );
+      let saved = false;
+      // Try server API first
+      if (typeof window !== 'undefined') {
+        try {
+          const res = await fetch('/api/employees', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(emp),
+          });
+          const json = await res.json();
+          if (json.success || (json.error && json.error.includes('already exists'))) {
+            saved = true;
+          } else {
+            syncError = json.error || 'Employee sync error';
+          }
+        } catch {
+          // fallback to direct
+        }
+      }
+
+      if (!saved) {
+        const db = getFirestoreDb();
+        if (db) {
+          try {
+            await runWithTimeout(
+              setDoc(doc(db, 'employees', emp.employeeId), emp),
+              6000,
+              `sync emp ${emp.employeeId}`
+            );
+            saved = true;
+          } catch (e: unknown) {
+            syncError = e instanceof Error ? e.message : 'Write failed';
+          }
+        }
+      }
+
+      if (saved) empSuccess++;
     }
 
     // 2. Sync Attendance
-    for (const att of atts) {
-      await runWithTimeout(
-        setDoc(doc(db, 'attendance', att.id), att),
-        6000,
-        `sync att ${att.id}`
-      );
+    const db = getFirestoreDb();
+    if (db) {
+      for (const att of atts) {
+        try {
+          await runWithTimeout(
+            setDoc(doc(db, 'attendance', att.id), att),
+            6000,
+            `sync att ${att.id}`
+          );
+          attSuccess++;
+        } catch {
+          // continue
+        }
+      }
+
+      // 3. Sync Settings
+      try {
+        await runWithTimeout(
+          setDoc(doc(db, 'settings', 'office'), setts),
+          6000,
+          'sync settings'
+        );
+      } catch {
+        // continue
+      }
     }
 
-    // 3. Sync Settings
-    await runWithTimeout(
-      setDoc(doc(db, 'settings', 'office'), setts),
-      6000,
-      'sync settings'
-    );
+    if (empSuccess === 0 && emps.length > 0) {
+      return {
+        success: false,
+        employeesSynced: 0,
+        attendanceSynced: 0,
+        error: syncError || 'Could not write to cloud database. Please check Firestore security rules in Firebase Console.',
+      };
+    }
 
     return {
       success: true,
-      employeesSynced: emps.length,
-      attendanceSynced: atts.length,
+      employeesSynced: empSuccess,
+      attendanceSynced: attSuccess,
     };
   } catch (err: unknown) {
     console.error('Failed to sync to Firebase:', err);

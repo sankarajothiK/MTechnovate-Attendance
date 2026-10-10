@@ -24,6 +24,7 @@ import {
   CheckCircle,
   LayoutGrid,
   List,
+  AlertTriangle,
 } from 'lucide-react';
 import { getEmployees, updateEmployee, deleteEmployee } from '@/lib/db';
 import { Employee } from '@/types';
@@ -38,6 +39,7 @@ export default function EmployeesPage() {
   const [departmentFilter, setDepartmentFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+  const [cloudWarning, setCloudWarning] = useState(false);
 
   // Modals
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -67,6 +69,14 @@ export default function EmployeesPage() {
 
   useEffect(() => {
     loadEmployees();
+    fetch('/api/firebase-health')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.status === 'permission_denied') {
+          setCloudWarning(true);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const handleToggleStatus = async (emp: Employee) => {
@@ -99,6 +109,28 @@ export default function EmployeesPage() {
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        {/* Cloud Warning Alert */}
+        {cloudWarning && (
+          <div className="bg-amber-50 border border-amber-300 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-amber-950 shadow-xs">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold text-xs sm:text-sm">Action Needed: Firebase Cloud Rules Expired</p>
+                <p className="text-[11px] sm:text-xs text-amber-800 mt-0.5">
+                  Firebase 30-day test rules expired. Employees saved in your browser will not appear on other devices until rules are updated in Firebase Console.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsFirebaseModalOpen(true)}
+              className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-xs shrink-0 cursor-pointer transition-all shadow-xs"
+            >
+              Fix in 30 Seconds →
+            </button>
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">

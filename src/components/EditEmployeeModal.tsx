@@ -85,7 +85,7 @@ export default function EditEmployeeModal({
       const img = new Image();
       img.onload = () => {
         try {
-          const maxDim = 400;
+          const maxDim = 320;
           let width = img.width;
           let height = img.height;
           if (width > height) {
@@ -105,21 +105,28 @@ export default function EditEmployeeModal({
           const ctx = canvas.getContext('2d');
           if (ctx) {
             ctx.drawImage(img, 0, 0, width, height);
-            const compressed = canvas.toDataURL('image/jpeg', 0.85);
+            const compressed = canvas.toDataURL('image/jpeg', 0.75);
             setPhotoUrl(compressed);
             setError('');
+          } else {
+            if (rawData.length > 500000) {
+              setError('Photo file is too large to process without canvas. Please choose a smaller photo.');
+            } else {
+              setPhotoUrl(rawData);
+              setError('');
+            }
+          }
+        } catch {
+          if (rawData.length > 500000) {
+            setError('Photo file is too large. Please select an image under 500KB.');
           } else {
             setPhotoUrl(rawData);
             setError('');
           }
-        } catch {
-          setPhotoUrl(rawData);
-          setError('');
         }
       };
       img.onerror = () => {
-        setPhotoUrl(rawData);
-        setError('');
+        setError('Failed to process image. Please choose another file.');
       };
       img.src = rawData;
     };
